@@ -1,0 +1,21 @@
+:80 {
+  redir https://{host}{uri} permanent
+}
+
+# Local wildcard (*.lvh.me → Subdomino)
+*.lvh.me {
+  tls internal
+  reverse_proxy subdomino:3000
+}
+
+# CMS direct access (login/dashboard)
+localhost:3001, 127.0.0.1:3001 {
+  tls internal
+  reverse_proxy career-cms:3001
+}
+
+# Prod wildcard example (*.froste.eu → Subdomino)
+# *.froste.eu {
+#   tls your-email@example.com  # Auto Let's Encrypt
+#   reverse_proxy subdomino:3000
+# }

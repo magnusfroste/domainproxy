@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  subdomino:
+    build: .
+    volumes:
+      - subdomino_data:/app/data
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  career-cms:
+    build: ./cms
+    volumes:
+      - cms_data:/app/data
+    environment:
+      - NODE_ENV=production
+      - SUBDOMINO_URL=http://subdomino:3000
+      - CMS_URL=http://career-cms:3001
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - subdomino
+      - career-cms
+    restart: unless-stopped
+
+volumes:
+  subdomino_data:
+  cms_data:
+  caddy_data:
