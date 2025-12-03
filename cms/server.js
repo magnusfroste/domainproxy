@@ -126,6 +126,7 @@ li{padding:10px;border:1px solid #ddd;margin:10px 0;}</style>
 <h3>Create Tenant (Custom Domain)</h3>
 <form method="post" action="/dashboard/create">
   <input name="base_domain" placeholder="companyname.com" required>
+  <input name="subdomain" placeholder="career" value="career" required>
   <input name="subdomino_api_key" placeholder="froste123 or your key" required>
   <textarea name="content" placeholder="Company intro..." rows="3"></textarea>
   <textarea name="jobs" placeholder='[{"title":"Job 1","desc":"Description"}] ' rows="5"></textarea>
@@ -141,20 +142,20 @@ li{padding:10px;border:1px solid #ddd;margin:10px 0;}</style>
 
 app.post('/dashboard/create', requireLogin, async (req, res) => {
   const userId = req.session.userId;
-  const { base_domain, subdomino_api_key, content, jobs } = req.body;
+  const { base_domain, subdomino_api_key, content, jobs, subdomain = 'career' } = req.body;
   try {
     // Call Subdomino API
-    const subdominoRes = await axios.post(`http://localhost:3000/api/v1/register-subdomain`, {
-      subdomain: 'career',
-      target_url: `http://localhost:${PORT}/career`
+    const subdominoRes = await axios.post(`${SUBDOMINO_URL}/api/v1/register-subdomain`, {
+      subdomain,
+      target_url: `${CMS_URL}/career`
     }, {
       headers: { 'X-API-Key': subdomino_api_key }
     });
     if (subdominoRes.data.success) {
       // Save tenant
       db.run(
-        'INSERT INTO tenants (user_id, base_domain, subdomino_api_key, content, jobs) VALUES (?, ?, ?, ?, ?)',
-        [userId, base_domain, subdomino_api_key, content, jobs],
+        'INSERT INTO tenants (user_id, base_domain, subdomain, subdomino_api_key, content, jobs) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, base_domain, subdomain, subdomino_api_key, content, jobs],
         () => res.redirect('/dashboard')
       );
     } else {
@@ -208,10 +209,6 @@ app.get(['/career', '/career/*'], (req, res) => {
   const parts = host.toLowerCase().split('.');
   const subdomain = parts[0];
   const baseDomain = parts.slice(1).join('.');
-
-  if (subdomain !== 'career' && subdomain !== 'localhost' && subdomain !== 'lvh.me') {
-    return res.status(404).send('Tenant not found');
-  }
 
   db.get(
     'SELECT * FROM tenants WHERE base_domain = ?',
