@@ -101,10 +101,20 @@ app.post('/api/v1/create-tenant', apiAuth, (req, res) => {
   if (!base_domain) return res.status(400).json({ error: 'base_domain required' });
   const saasId = req.saas.id;
   const lowerDomain = base_domain.toLowerCase().trim();
-  db.run('INSERT INTO tenants (saas_id, base_domain) VALUES (?, ?)', [saasId, lowerDomain], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    autoConfigureCaddy(lowerDomain);
-    res.json({ success: true, tenant_id: this.lastID, base_domain: lowerDomain });
+  
+  // Check if tenant already exists
+  db.get('SELECT id FROM tenants WHERE saas_id = ? AND base_domain = ?', [saasId, lowerDomain], (err, existing) => {
+    if (existing) {
+      // Tenant already exists, return it
+      return res.json({ success: true, tenant_id: existing.id, base_domain: lowerDomain, already_exists: true });
+    }
+    
+    // Create new tenant
+    db.run('INSERT INTO tenants (saas_id, base_domain) VALUES (?, ?)', [saasId, lowerDomain], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      autoConfigureCaddy(lowerDomain);
+      res.json({ success: true, tenant_id: this.lastID, base_domain: lowerDomain });
+    });
   });
 });
 
