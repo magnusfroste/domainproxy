@@ -1,67 +1,102 @@
-# 🪄 Subdomino + Career CMS Demo (Dual-Project Setup)
+# DomainProxy + Career CMS (EasyPanel Deployment Guide)
 
-**Two Projects:**
-1. **Subdomino** (root): Multi-tenant domain proxy API.
-2. **Career CMS** (cms/): Multi-tenant SaaS example integrating Subdomino.
+**DomainProxy:** Multi-tenant subdomain proxy (arbitrary subdomain.domain.com → your backend).
 
-**Full Stack Test:** Deploy both → customer logins → configures career.company.com → auto-registers proxy → instant custom domain.
+**Career CMS:** Example SaaS CMS integrating DomainProxy.
 
-## 🚀 Local Development (Both Running)
+## 🐳 EasyPanel Deployment (Separate Instances)
+
+### 1. DomainProxy Instance (Proxy Server)
+**EasyPanel → New App → Docker Compose**
+Paste this [docker-compose.yml](docker-compose.yml) (Caddy HTTPS included):
+
 ```
-# Root (Subdomino)
-npm run dev  # http://localhost:3000
+version: '3.8'
 
-# CMS dir
-cd cms && npm run dev  # http://localhost:3001
-```
+services:
+  domainproxy:
+    build: .
+    volumes:
+      - domainproxy_data:/app/data
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
 
-**Test Flow:**
-1. **Subdomino Admin:** http://localhost:3000/admin (admin/admin123) - Note API key `froste123`.
-2. **CMS Login:** http://localhost:3001/login
-   - demo1@froste.eu / demo123 → Create tenant "froste.eu" (API key: froste123)
-   - demo2@liteit.se / demo123 → Create tenant "liteit.se" (API key: froste123)
-3. **Proxy Test:** http://career.lvh.me:3000 → proxies to CMS http://localhost:3001/career (Host preserved → froste.eu tenant).
+  caddy:
+    image: caddy:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - domainproxy
+    restart: unless-stopped
 
-## 🐳 Docker Compose (Production-Ready - Both Services)
-```
-docker compose up --build -d
-```
-- Subdomino: http://localhost:3000
-- CMS: http://localhost:3001
-- Volumes persist data.
-
-**EasyPanel Deployments:**
-1. **Subdomino Instance:** Docker Compose → [docker-compose.yml](docker-compose.yml) (ports 3000).
-2. **CMS Instance:** Docker Compose → copy for CMS-only (build: ./cms, ports 3001).
-   - Set env `SUBDOMINO_URL=https://subdomino.yourdomain.com`
-
-## 🎯 End-to-End Demo (career.froste.eu & career.liteit.se)
-1. **Customer 1 (froste.eu):** Login CMS → Create tenant "froste.eu" → Add content/jobs → Auto-registers `career` subdomain with Subdomino.
-2. **DNS:** Customer adds `*` A record → Subdomino IP.
-3. **Live:** career.froste.eu → Subdomino → proxies to CMS `/career` → renders froste.eu tenant data.
-4. **Customer 2 (liteit.se):** Same → career.liteit.se works independently.
-
-**CMS Features:**
-- Multi-user login (demo accounts).
-- Per-tenant: domain, content, jobs JSON.
-- Auto Subdomino API call on create.
-- Dynamic `/career` route detects Host → tenant data.
-
-## 📋 Files Structure
-```
-.
-├── server.js, package.json, Dockerfile  # Subdomino
-├── cms/
-│   ├── server.js, package.json, Dockerfile  # Career CMS
-├── docker-compose.yml  # Both services
-└── README.md
+volumes:
+  domainproxy_data:
+  caddy_data:
 ```
 
-**Production DNS (Namecheap):**
+**Caddyfile:** 
 ```
-A | @ | Main site IP  (companyname.com)
-CNAME | www | Main site
-A | * | Subdomino IP  (catches career.companyname.com)
+:80 {
+  redir https://{host}{uri} permanent
+}
+
+# Replace with your domain
+*.yourdomain.com {
+  tls your-email@domain.com
+  reverse_proxy domainproxy:3000
+}
+
+# Admin/API
+yourdomain.com {
+  tls your-email@domain.com
+  reverse_proxy /admin* domainproxy:3000
+  reverse_proxy /api* domainproxy:3000
+  reverse_proxy /* domainproxy:3000
+}
 ```
 
-Scalable SaaS demo complete! Deploy & test.
+**Domain:** yourdomain.com (wildcard DNS * → EasyPanel IP).
+
+**Access:** https://yourdomain.com/admin (admin/admin123)
+
+### 2. Career CMS Instance (Separate App)
+**EasyPanel → New App → Docker Compose**
+```
+version: '3.8'
+
+services:
+  career-cms:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - cms_data:/app/data
+    environment:
+      - NODE_ENV=production
+      - SUBDOMINO_URL=https://yourdomain.com  # Proxy instance URL
+    restart: unless-stopped
+
+volumes:
+  cms_data:
+```
+
+**Upload:** cms/ folder as Git or zip.
+
+**Domain:** cms.yourdomain.com (or IP:3001).
+
+**Access:** https://cms.yourdomain.com:3001/login (demo1@froste.eu/demo123)
+
+### 3. Test Flow
+1. Proxy Admin: Create tenant "froste.eu" API key.
+2. CMS Login → Create tenant "froste.eu" (paste API key) → auto-registers "career".
+3. Namecheap: * → Proxy IP.
+4. https://career.froste.eu → Proxy → CMS → tenant data.
+
+**Local Test:** docker compose up --build -d (full stack).
+
+Production live!
