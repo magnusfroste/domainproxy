@@ -7,8 +7,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const SUBDOMINO_URL = process.env.SUBDOMINO_URL || 'http://localhost:3000';
-const CMS_URL = process.env.CMS_URL || `http://localhost:${PORT}`;
+const SUBDOMINO_API_KEY = process.env.SUBDOMINO_API_KEY || 'saas_demo_123';
 const DATA_DIR = path.join(__dirname, 'data');
 fs.ensureDirSync(DATA_DIR);
 
@@ -39,7 +38,6 @@ db.serialize(() => {
     user_id INTEGER NOT NULL,
     base_domain TEXT NOT NULL,
     subdomain TEXT NOT NULL DEFAULT 'career',
-    subdomino_api_key TEXT NOT NULL,
     content TEXT DEFAULT '',
     jobs TEXT DEFAULT '[]',  -- JSON array
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -128,7 +126,6 @@ li{padding:10px;border:1px solid #ddd;margin:10px 0;}</style>
 <form method="post" action="/dashboard/create">
   <input name="base_domain" placeholder="companyname.com" required>
   <input name="subdomain" placeholder="career" value="career" required>
-  <input name="subdomino_api_key" placeholder="froste123 or your key" required>
   <textarea name="content" placeholder="Company intro..." rows="3"></textarea>
   <textarea name="jobs" placeholder='[{"title":"Job 1","desc":"Description"}] ' rows="5"></textarea>
   <button>Create & Register with Subdomino</button>
@@ -143,24 +140,33 @@ li{padding:10px;border:1px solid #ddd;margin:10px 0;}</style>
 
 app.post('/dashboard/create', requireLogin, async (req, res) => {
   const userId = req.session.userId;
-  const { base_domain, subdomino_api_key, content, jobs, subdomain = 'career' } = req.body;
+  const { base_domain, content, jobs, subdomain = 'career' } = req.body;
   try {
-    // Optional: Register with Subdomino proxy
+    // 1. Create tenant (customer domain) if not exists
+    await axios.post(`${SUBDOMINO_URL}/api/v1/create-tenant`, {
+      base_domain
+    }, {
+      headers: { 'X-API-Key': SUBDOMINO_API_KEY }
+    });
+    console.log(`✅ Tenant created: ${base_domain}`);
+
+    // 2. Register subdomain proxy
     await axios.post(`${SUBDOMINO_URL}/api/v1/register-subdomain`, {
       subdomain,
+      base_domain,
       target_url: `${CMS_URL}/career`
     }, {
-      headers: { 'X-API-Key': subdomino_api_key }
+      headers: { 'X-API-Key': SUBDOMINO_API_KEY }
     });
     console.log(`✅ Proxy registered: ${subdomain}.${base_domain}`);
   } catch (err) {
-    console.error(`❌ Proxy register failed: ${err.message}`);
+    console.error(`❌ Subdomino API error: ${err.message}`);
     // Continue - tenant saved anyway
   }
   // Always save tenant
   db.run(
-    'INSERT INTO tenants (user_id, base_domain, subdomain, subdomino_api_key, content, jobs) VALUES (?, ?, ?, ?, ?, ?)',
-    [userId, base_domain, subdomain, subdomino_api_key, content, jobs],
+    'INSERT INTO tenants (user_id, base_domain, subdomain, content, jobs) VALUES (?, ?, ?, ?, ?)',
+    [userId, base_domain, subdomain, content, jobs],
     () => res.redirect('/dashboard')
   );
 });
@@ -251,6 +257,7 @@ ${jobsHtml || '<p>No jobs posted yet.</p>'}
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Career CMS running on http://localhost:${PORT}`);
-  console.log(`📝 Login: http://localhost:${PORT}/login`);
-  console.log(`🌐 Career pages: http://career.lvh.me:${PORT}/career`);
+  console.log(`📝 Login: http://localhost:${PORT}/login (demo1@froste.eu/demo123)`);
+  console.log(`🔑 Subdomino API Key: ${SUBDOMINO_API_KEY}`);
+  console.log(`🌐 Career pages: https://career.customerdomain.com (after DNS CNAME setup)`);
 });

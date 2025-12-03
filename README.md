@@ -1,8 +1,83 @@
-# DomainProxy + Career CMS (EasyPanel Deployment Guide)
+# DomainProxy: SaaS Subdomain Proxy Service & Career CMS Demo
 
-**DomainProxy:** Multi-tenant subdomain proxy (arbitrary subdomain.domain.com → your backend).
+## Product Overview
 
-**Career CMS:** Example SaaS CMS integrating DomainProxy.
+**DomainProxy** is a multi-tenant subdomain proxy service designed for SaaS builders. It enables your customers to seamlessly serve their branded subdomains (e.g., `career.companyname.com`) without complex DNS or infrastructure setup.
+
+### Core Problem
+SaaS platforms need to let customers create custom subdomains for their branded experiences. Traditionally, this requires:
+- Customers to configure wildcard DNS (* CNAME)
+- SaaS providers to manage SSL certificates and reverse proxying
+- Complex integration for each customer domain
+
+**DomainProxy solves this** by providing a simple API that customers use to register subdomains, pointing their DNS once to your proxy service.
+
+### How It Works
+1. **Customer Setup:** Point CNAME `career` (or any subdomain prefix) to your DomainProxy instance.
+2. **SaaS Integration:** Your app calls DomainProxy API to register `subdomain.companyname.com` → your backend URL.
+3. **Instant Activation:** Visitors access `https://career.companyname.com` which proxies to your SaaS tenant's page.
+
+### Example Use Case: Career ATS SaaS
+- SaaS: Career CMS (included demo)
+- Customer: "Acme Corp" wants `career.acmecorp.com`
+- DNS: `CNAME career acmecorp.com` → DomainProxy IP
+- SaaS: Register via API: `subdomain: "career", target_url: "https://your-saas.com/tenant/acme"`
+- Result: `https://career.acmecorp.com` serves Acme's branded career page with SSL.
+
+## Architecture
+
+- **Proxy Service:** Express.js server with SQLite database
+- **Auto SSL:** Integrates with Caddy for automatic Let's Encrypt certificates
+- **Multi-tenant:** Isolated by API keys per customer domain
+- **Demo CMS:** Full-stack SaaS example (career pages for customers)
+
+## API Quick Start
+
+```bash
+# 1. Create tenant (customer domain)
+curl -X POST https://yourproxy.com/api/v1/create-tenant \
+  -H "X-API-Key: your_saas_api_key" \
+  -d '{"base_domain": "customer.com"}'
+
+# 2. Register subdomain proxy
+curl -X POST https://yourproxy.com/api/v1/register-subdomain \
+  -H "X-API-Key: your_saas_api_key" \
+  -d '{"subdomain": "career", "base_domain": "customer.com", "target_url": "https://your-saas.com/tenant/customer"}'
+
+# Visit: https://career.customer.com
+```
+
+## Demo
+
+- **Admin:** https://yourproxy.com/admin (admin/admin123)
+- **Demo SaaS API Key:** saas_demo_123
+- **Demo Tenant:** froste.eu
+- **Test Command:**
+  ```bash
+  curl -X POST http://localhost:3000/api/v1/register-subdomain \
+    -H "X-API-Key: saas_demo_123" \
+    -d '{"subdomain": "career", "base_domain": "froste.eu", "target_url": "https://httpbin.org"}'
+  ```
+- **Visit:** https://career.froste.eu
+
+### Career CMS: SaaS Integration Example
+
+The Career CMS demonstrates a complete SaaS integration with Subdomino:
+
+1. **Customer Signs Up:** User logs into CMS (e.g., demo1@froste.eu/demo123).
+2. **Configure Domain:** In dashboard, enter `base_domain` (e.g., customer.com) and `subdomain` (e.g., career).
+3. **Auto-Register:** CMS calls Subdomino API to create tenant and register subdomain.
+4. **DNS Setup:** Customer points CNAME `career` → your Subdomino IP.
+5. **Live Page:** Visitors access `https://career.customer.com` for branded career page.
+
+**CMS Config:** Set `SUBDOMINO_API_KEY` to your SaaS API key (e.g., `saas_demo_123`).
+
+**Test Locally:**
+- CMS: http://localhost:3001/login
+- Create tenant: base_domain=froste.eu, subdomain=career
+- Check proxy registered: GET /api/v1/proxies with X-API-Key: saas_demo_123
+
+---
 
 ## 🐳 EasyPanel Deployment (Separate Instances)
 

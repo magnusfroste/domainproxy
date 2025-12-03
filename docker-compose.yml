@@ -18,6 +18,7 @@ services:
     environment:
       - NODE_ENV=production
       - SUBDOMINO_URL=http://subdomino:3000
+      - SUBDOMINO_API_KEY=saas_demo_123
       - CMS_URL=http://career-cms:3001
     restart: unless-stopped
 
