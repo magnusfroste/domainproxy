@@ -100,17 +100,22 @@ app.get('/dashboard', requireLogin, (req, res) => {
   const userId = req.session.userId;
   db.all('SELECT * FROM tenants WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, tenants) => {
     if (err) tenants = [];
-    const tenantList = tenants.map(t => `
+    const PROXY_DOMAIN = process.env.PROXY_DOMAIN || 'app-domain-proxy.katsu6.easypanel.host';
+    const tenantList = tenants.map(t => {
+      const cnameTarget = `${t.subdomain}-${t.base_domain.replace(/\./g, '-')}.${PROXY_DOMAIN}`;
+      return `
       <li>
         <strong>${t.subdomain}.${t.base_domain}</strong>
         <a href="https://${t.subdomain}.${t.base_domain}" target="_blank" style="margin-left:10px;">🌐 Live</a>
+        <br><strong>DNS Setup:</strong> Add CNAME record:
+        <br><code style="background:#f4f4f4;padding:5px;display:block;margin:5px 0;">${t.subdomain}  CNAME  ${cnameTarget}</code>
         <br>Content: ${t.content.substring(0, 100)}...
         <br><a href="/dashboard/edit/${t.id}">Edit</a> |
         <form method="post" action="/dashboard/delete/${t.id}" style="display:inline;" onsubmit="return confirm('Delete?')">
           <button>Delete</button>
         </form>
       </li>
-    `).join('') || '<li>No tenants</li>';
+    `}).join('') || '<li>No tenants</li>';
 
     res.send(`
 <!DOCTYPE html>
