@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subdomino - Instant Custom Subdomains</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 0; position: fixed; width: 100%; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    nav { display: flex; justify-content: space-between; align-items: center; }
+    nav a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; transition: background 0.3s; }
+    nav a:hover { background: rgba(255,255,255,0.2); }
+    .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 120px 0 80px; text-align: center; }
+    .hero h1 { font-size: 3.5rem; margin-bottom: 1rem; }
+    .hero p { font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.95; }
+    .cta { background: #ff6b6b; color: white; padding: 1rem 2rem; border: none; border-radius: 50px; font-size: 1.1rem; cursor: pointer; transition: transform 0.3s; text-decoration: none; display: inline-block; }
+    .cta:hover { transform: scale(1.05); }
+    section { padding: 80px 0; }
+    .features { background: #f8f9fa; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 3rem; }
+    .feature { text-align: center; padding: 2rem; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); transition: transform 0.3s; }
+    .feature:hover { transform: translateY(-10px); }
+    .feature-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .api { background: white; }
+    .api pre { background: #f4f4f4; padding: 2rem; border-radius: 10px; overflow-x: auto; margin: 2rem 0; font-family: monospace; }
+    .demo { background: #e8f5e8; text-align: center; }
+    .demo-box { background: white; padding: 2rem; border-radius: 10px; display: inline-block; margin: 2rem 0; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+    footer { background: #333; color: white; text-align: center; padding: 2rem 0; }
+    @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } nav { flex-direction: column; gap: 1rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container">
+      <h2>🪄 Subdomino</h2>
+      <div>
+        <a href="#features">Features</a>
+        <a href="#api">API</a>
+        <a href="/admin">Admin</a>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Instant Custom Subdomains</h1>
+      <p>Point wildcard DNS to Subdomino. Register subdomains via simple API. Proxy to any backend instantly.</p>
+      <a href="/admin" class="cta">Get Started → Admin Panel</a>
+    </div>
+  </section>
+
+  <section id="features" class="features">
+    <div class="container">
+      <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 1rem;">Why Subdomino?</h2>
+      <p style="text-align: center; max-width: 600px; margin: 0 auto 3rem;">Multi-tenant subdomain proxy for developers. Self-hosted, API-first, zero-config.</p>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">🔑</div>
+          <h3>API Keys & Tenants</h3>
+          <p>Create tenants with unique API keys. Each manages their own subdomains.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Instant Proxying</h3>
+          <p>Register subdomain → target URL. Automatic HTTPS proxy with origin change.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🐳</div>
+          <h3>Docker Ready</h3>
+          <p>One-command deploy with Caddy for HTTPS. SQLite persistent data.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔒</div>
+          <h3>Secure & Scalable</div>
+          <p>Basic auth admin, API key auth, production-ready Express + SQLite.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="api" class="api">
+    <div class="container">
+      <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 1rem;">Simple API</h2>
+      <pre>POST /api/v1/register-subdomain
+Headers: X-API-Key: your_key
+Body: {
+  "subdomain": "career",
+  "target_url": "https://your-backend.com"
+}
+
+Response: {
+  "success": true,
+  "proxy_url": "https://career.yourdomain.com"
+}</pre>
+      <p style="text-align: center; margin: 2rem 0;"><a href="/admin" class="cta">Create API Key →</a></p>
+    </div>
+  </section>
+
+  <section class="demo">
+    <div class="container">
+      <h2>Try Demo</h2>
+      <div class="demo-box">
+        <p><strong>Base Domain:</strong> froste.eu</p>
+        <p><strong>API Key:</strong> froste123</p>
+        <p>Register "demo" → https://httpbin.org<br>
+        Visit: https://demo.lvh.me:3000 (local) or career.froste.eu (prod)</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Subdomino. Self-hosted subdomain magic. <a href="/admin" style="color: #ccc;">Admin</a></p>
+    </div>
+  </footer>
+</body>
+</html>
