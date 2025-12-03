@@ -62,15 +62,15 @@ curl -X POST https://yourproxy.com/api/v1/register-subdomain \
 
 ### Career CMS: SaaS Integration Example
 
-The Career CMS demonstrates a complete SaaS integration with Subdomino:
+The Career CMS demonstrates a complete SaaS integration with Subdomain:
 
 1. **Customer Signs Up:** User logs into CMS (e.g., demo1@froste.eu/demo123).
 2. **Configure Domain:** In dashboard, enter `base_domain` (e.g., customer.com) and `subdomain` (e.g., career).
-3. **Auto-Register:** CMS calls Subdomino API to create tenant and register subdomain.
-4. **DNS Setup:** Customer points CNAME `career` → your Subdomino IP.
+3. **Auto-Register:** CMS calls Subdomain API to create tenant and register subdomain.
+4. **DNS Setup:** Customer points CNAME `career` → your Subdomain IP.
 5. **Live Page:** Visitors access `https://career.customer.com` for branded career page.
 
-**CMS Config:** Set `SUBDOMINO_API_KEY` to your SaaS API key (e.g., `saas_demo_123`).
+**CMS Config:** Set `SUBDOMAIN_API_KEY` to your SaaS API key (e.g., `saas_demo_123`).
 
 **Test Locally:**
 - CMS: http://localhost:3001/login
@@ -153,7 +153,7 @@ services:
       - cms_data:/app/data
     environment:
       - NODE_ENV=production
-      - SUBDOMINO_URL=https://yourdomain.com  # Proxy instance URL
+      - SUBDOMAIN_URL=https://yourdomain.com  # Proxy instance URL
     restart: unless-stopped
 
 volumes:
@@ -178,7 +178,7 @@ Production live!
 
 ## 🚀 Fully Automated Self-Hosted Deployment (No EasyPanel)
 
-**Proxy Service (Subdomino)**
+**Proxy Service (Subdomain)**
 
 1. VPS (e.g. DigitalOcean $6/mo Ubuntu 22.04), firewall ufw allow 22,80,443.
 
@@ -210,7 +210,7 @@ Production live!
 
 Deploy proxy first, note API base URL (yourdomain.com)
 
-CMS docker-compose.yml: set SUBDOMINO_URL=https://yourdomain.com
+CMS docker-compose.yml: set SUBDOMAIN_URL=https://yourdomain.com
 
 `docker compose -f cms-docker-compose.yml up -d` (create separate)
 

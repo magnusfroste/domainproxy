@@ -7,7 +7,9 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const SUBDOMINO_API_KEY = process.env.SUBDOMINO_API_KEY || 'saas_demo_123';
+const SUBDOMAIN_URL = process.env.SUBDOMAIN_URL || 'http://localhost:3000';
+const SUBDOMAIN_API_KEY = process.env.SUBDOMAIN_API_KEY || 'saas_demo_123';
+const CMS_URL = process.env.CMS_URL || 'http://localhost:3001';
 const DATA_DIR = path.join(__dirname, 'data');
 fs.ensureDirSync(DATA_DIR);
 
@@ -128,7 +130,7 @@ li{padding:10px;border:1px solid #ddd;margin:10px 0;}</style>
   <input name="subdomain" placeholder="career" value="career" required>
   <textarea name="content" placeholder="Company intro..." rows="3"></textarea>
   <textarea name="jobs" placeholder='[{"title":"Job 1","desc":"Description"}] ' rows="5"></textarea>
-  <button>Create & Register with Subdomino</button>
+  <button>Create & Register with Subdomain</button>
 </form>
 
 <h3>Your Tenants</h3>
@@ -143,24 +145,24 @@ app.post('/dashboard/create', requireLogin, async (req, res) => {
   const { base_domain, content, jobs, subdomain = 'career' } = req.body;
   try {
     // 1. Create tenant (customer domain) if not exists
-    await axios.post(`${SUBDOMINO_URL}/api/v1/create-tenant`, {
+    await axios.post(`${SUBDOMAIN_URL}/api/v1/create-tenant`, {
       base_domain
     }, {
-      headers: { 'X-API-Key': SUBDOMINO_API_KEY }
+      headers: { 'X-API-Key': SUBDOMAIN_API_KEY }
     });
     console.log(`✅ Tenant created: ${base_domain}`);
 
     // 2. Register subdomain proxy
-    await axios.post(`${SUBDOMINO_URL}/api/v1/register-subdomain`, {
+    await axios.post(`${SUBDOMAIN_URL}/api/v1/register-subdomain`, {
       subdomain,
       base_domain,
       target_url: `${CMS_URL}/career`
     }, {
-      headers: { 'X-API-Key': SUBDOMINO_API_KEY }
+      headers: { 'X-API-Key': SUBDOMAIN_API_KEY }
     });
     console.log(`✅ Proxy registered: ${subdomain}.${base_domain}`);
   } catch (err) {
-    console.error(`❌ Subdomino API error: ${err.message}`);
+    console.error(`❌ Subdomain API error: ${err.message}`);
     // Continue - tenant saved anyway
   }
   // Always save tenant
@@ -211,9 +213,11 @@ app.post('/dashboard/delete/:id', requireLogin, (req, res) => {
 // Career Page (Multi-Tenant - Host Detection)
 app.get(['/career', '/career/*'], (req, res) => {
   const host = req.headers.host || '';
+  console.log(`📍 Career page request - Host: ${host}`);
   const parts = host.toLowerCase().split('.');
   const subdomain = parts[0];
   const baseDomain = parts.slice(1).join('.');
+  console.log(`📍 Parsed - subdomain: ${subdomain}, baseDomain: ${baseDomain}`);
 
   db.get(
     'SELECT * FROM tenants WHERE base_domain = ?',
@@ -258,6 +262,6 @@ ${jobsHtml || '<p>No jobs posted yet.</p>'}
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Career CMS running on http://localhost:${PORT}`);
   console.log(`📝 Login: http://localhost:${PORT}/login (demo1@froste.eu/demo123)`);
-  console.log(`🔑 Subdomino API Key: ${SUBDOMINO_API_KEY}`);
+  console.log(`🔑 Subdomain API Key: ${SUBDOMAIN_API_KEY}`);
   console.log(`🌐 Career pages: https://career.customerdomain.com (after DNS CNAME setup)`);
 });

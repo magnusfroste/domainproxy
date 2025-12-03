@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 fs.ensureDirSync(DATA_DIR);
 
-const DB_PATH = path.join(DATA_DIR, 'subdomino.db');
+const DB_PATH = path.join(DATA_DIR, 'subdomain.db');
 const db = new sqlite3.Database(DB_PATH);
 
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
@@ -18,7 +18,6 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
 
 // Init DB
 db.serialize(() => {
@@ -79,7 +78,7 @@ function autoConfigureCaddy(baseDomain) {
         "handle": [{
           "handler": "reverse_proxy",
           "upstreams": [{
-            "dial": "subdomino:3000"
+            "dial": "subdomain:3000"
           }]
         }]
       }],
@@ -121,7 +120,7 @@ app.get('/api/v1/tenants', apiAuth, (req, res) => {
 function requireAdminAuth(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Basic ')) {
-    res.set('WWW-Authenticate', 'Basic realm="Subdomino Admin"');
+    res.set('WWW-Authenticate', 'Basic realm="Subdomain Admin"');
     return res.status(401).send('Unauthorized');
   }
   const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
@@ -210,24 +209,88 @@ app.get('/admin', requireAdminAuth, (req, res) => {
     GROUP BY s.id ORDER BY s.created_at DESC
   `, (err, saasList) => {
     if (err) saasList = [];
-    const saasHtml = saasList.map(s => `
-      <li>
-        <strong>${s.name || 'Unnamed SaaS'}</strong> (API: ${s.api_key}) 
-        <br>Tenants: ${s.tenant_count || 0} | Proxies: ${s.proxy_count || 0}
-      </li>
-    `).join('') || '<li>No SaaS accounts</li>';
+    
+    // Get detailed tenants and proxies for each SaaS
+    const promises = saasList.map(saas => {
+      return new Promise((resolve) => {
+        // Get tenants
+        db.all('SELECT id, base_domain, created_at FROM tenants WHERE saas_id = ? ORDER BY created_at DESC', [saas.saas_id], (err, tenants) => {
+          if (err) tenants = [];
+          
+          // Get proxies for this SaaS
+          db.all(`
+            SELECT p.subdomain, p.target_url, p.created_at, t.base_domain 
+            FROM proxies p 
+            JOIN tenants t ON p.tenant_id = t.id 
+            WHERE t.saas_id = ? 
+            ORDER BY p.created_at DESC
+          `, [saas.saas_id], (err, proxies) => {
+            if (err) proxies = [];
+            resolve({ ...saas, tenants, proxies });
+          });
+        });
+      });
+    });
+    
+    Promise.all(promises).then(saasData => {
+      const saasHtml = saasData.map(s => {
+        const tenantsHtml = s.tenants.map(t => 
+          `<li style="font-size:0.9em;padding:5px;margin:5px 0;background:#f9f9f9;">📍 ${t.base_domain} <span style="color:#666;font-size:0.8em;">(${new Date(t.created_at).toLocaleString()})</span></li>`
+        ).join('') || '<li style="font-size:0.9em;color:#999;">No tenants</li>';
+        
+        const proxiesHtml = s.proxies.map(p => 
+          `<li style="font-size:0.9em;padding:5px;margin:5px 0;background:#f0f8ff;">
+            🔗 <strong>${p.subdomain}.${p.base_domain}</strong> → ${p.target_url}
+            <br><span style="color:#666;font-size:0.8em;margin-left:20px;">${new Date(p.created_at).toLocaleString()}</span>
+          </li>`
+        ).join('') || '<li style="font-size:0.9em;color:#999;">No proxies</li>';
+        
+        return `
+          <li style="margin-bottom:20px;">
+            <div style="background:#f8f9fa;padding:10px;border-radius:5px;margin-bottom:10px;position:relative;">
+              <strong style="font-size:1.1em;">${s.name || 'Unnamed SaaS'}</strong>
+              <br><code style="background:#fff;padding:3px 8px;border-radius:3px;font-size:0.9em;">${s.api_key}</code>
+              <br><span style="color:#666;font-size:0.85em;">Created: ${new Date(s.created_at).toLocaleString()}</span>
+              <form method="post" action="/admin/delete-saas" style="display:inline;position:absolute;top:10px;right:10px;">
+                <input type="hidden" name="saas_id" value="${s.saas_id}">
+                <button type="submit" onclick="return confirm('Delete ${s.name || 'this SaaS account'}? This will delete all tenants and proxies.')" style="padding:5px 10px;background:#dc3545;color:white;border:none;cursor:pointer;border-radius:3px;font-size:0.85em;">🗑️ Delete</button>
+              </form>
+            </div>
+            
+            <details style="margin-left:10px;">
+              <summary style="cursor:pointer;padding:5px;background:#e9ecef;border-radius:3px;margin:5px 0;">📂 Tenants (${s.tenant_count || 0})</summary>
+              <ul style="margin:10px 0;padding-left:20px;">${tenantsHtml}</ul>
+            </details>
+            
+            <details style="margin-left:10px;">
+              <summary style="cursor:pointer;padding:5px;background:#e9ecef;border-radius:3px;margin:5px 0;">🔗 Proxies (${s.proxy_count || 0})</summary>
+              <ul style="margin:10px 0;padding-left:20px;">${proxiesHtml}</ul>
+            </details>
+          </li>
+        `;
+      }).join('') || '<li>No SaaS accounts</li>';
 
-    res.send(`
+      res.send(`
 <!DOCTYPE html>
 <html>
-<head><title>Subdomino Admin</title>
-<style>body{font-family:Arial;max-width:900px;margin:50px auto;padding:20px;}
-form,ul{margin:20px 0;} input,textarea{width:100%;padding:10px;box-sizing:border-box;}
-button{padding:10px 20px;background:#007bff;color:white;border:none;cursor:pointer;}
-li{padding:10px;border:1px solid #ddd;margin:10px 0;}</style>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subdomain Admin</title>
+<style>
+body{font-family:Arial;max-width:1200px;margin:50px auto;padding:20px;}
+form,ul{margin:20px 0;} 
+input,textarea{width:100%;padding:10px;box-sizing:border-box;}
+button{padding:10px 20px;background:#007bff;color:white;border:none;cursor:pointer;border-radius:5px;}
+button:hover{background:#0056b3;}
+li{padding:10px;border:1px solid #ddd;margin:10px 0;list-style:none;}
+details{margin:5px 0;}
+summary{font-weight:500;}
+code{font-family:monospace;}
+</style>
 </head>
 <body>
-<h1>🪄 Subdomino - Domain Proxy Service</h1>
+<h1>🪄 Subdomain - Domain Proxy Service</h1>
 <p><strong>Demo:</strong> froste.eu / SaaS API key: saas_demo_123</p>
 <p>Test: POST /api/v1/register-subdomain {subdomain:"career", base_domain:"froste.eu", target_url:"https://httpbin.org"}<br>
 Then visit https://career.froste.eu</p>
@@ -246,10 +309,17 @@ Then visit https://career.froste.eu</p>
 <h3>Create SaaS Account</h3>
 <form method="post" action="/admin/create-saas">
   <input name="name" placeholder="SaaS Name (optional)">
-  <button>Create SaaS + API Key</button>
+  <button type="submit">Create SaaS + API Key</button>
 </form>
+<script>
+// Ensure form submission includes auth
+document.querySelector('form').addEventListener('submit', function(e) {
+  console.log('Form submitted');
+});
+</script>
 </body></html>
-    `);
+      `);
+    });
   });
 });
 
@@ -258,7 +328,23 @@ app.post('/admin/create-saas', requireAdminAuth, (req, res) => {
   const api_key = 'saas_' + Math.random().toString(36).substr(2, 9);
   db.run('INSERT INTO saas_accounts (api_key, name) VALUES (?, ?)', [api_key, name || null], (err) => {
     if (err) {
-      res.send(`Error: ${err.message}`);
+      res.status(500).send(`<!DOCTYPE html><html><body><h1>Error</h1><p>${err.message}</p><a href="/admin">Back to Admin</a></body></html>`);
+    } else {
+      res.send(`<!DOCTYPE html><html><head><title>Success</title><style>body{font-family:Arial;max-width:600px;margin:100px auto;padding:20px;text-align:center;}</style></head><body><h1>✅ SaaS Account Created!</h1><p><strong>Name:</strong> ${name || 'Unnamed'}</p><p><strong>API Key:</strong> <code style="background:#f4f4f4;padding:5px 10px;border-radius:5px;">${api_key}</code></p><p><a href="/admin" style="background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Back to Admin Panel</a></p></body></html>`);
+    }
+  });
+});
+
+app.post('/admin/delete-saas', requireAdminAuth, (req, res) => {
+  const { saas_id } = req.body;
+  if (!saas_id) {
+    return res.status(400).send('Missing saas_id');
+  }
+  
+  // Delete SaaS account (CASCADE will delete tenants and proxies)
+  db.run('DELETE FROM saas_accounts WHERE id = ?', [saas_id], (err) => {
+    if (err) {
+      res.status(500).send(`<!DOCTYPE html><html><body><h1>Error</h1><p>${err.message}</p><a href="/admin">Back to Admin</a></body></html>`);
     } else {
       res.redirect('/admin');
     }
@@ -285,7 +371,7 @@ app.use((req, res, next) => {
       console.log(`🔄 Proxying ${host}${req.url} → ${row.target_url}`);
       const proxy = createProxyMiddleware({
         target: row.target_url,
-        changeOrigin: true,
+        changeOrigin: false, // Keep original Host header for multi-tenant detection
         secure: true, // for https targets
         onError: (err, req, res) => {
           console.error('Proxy error:', err);
@@ -297,16 +383,19 @@ app.use((req, res, next) => {
   );
 });
 
+// Static files (after dynamic proxy, so proxied domains take precedence)
+app.use(express.static('public'));
+
 // Fallback landing page
 app.use((req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
-<head><title>Subdomino</title>
+<head><title>Subdomain</title>
 <style>body{font-family:sans-serif;max-width:600px;margin:100px auto;padding:20px;text-align:center;}</style>
 </head>
 <body>
-<h1>🪄 Subdomino - Custom Domain Proxy</h1>
+<h1>🪄 Subdomain - Custom Domain Proxy</h1>
 <p>Point wildcard DNS (*.yourdomain.com) to this server.</p>
 <p>Register subdomains via API: <code>POST /api/v1/register-subdomain</code></p>
 <p><a href="/admin">Admin Panel</a> | Example: <a href="https://career.froste.eu">career.froste.eu</a></p>
@@ -317,7 +406,7 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Subdomino running on http://localhost:${PORT}`);
+  console.log(`🚀 Subdomain running on http://localhost:${PORT}`);
   console.log(`📝 Admin: http://localhost:${PORT}/admin (admin/admin123)`);
   console.log(`🔑 Demo SaaS: api_key=saas_demo_123`);
   console.log(`🌐 Test: POST /api/v1/register-subdomain with X-API-Key: saas_demo_123 {subdomain:"career", base_domain:"froste.eu", target_url:"https://httpbin.org"}`);

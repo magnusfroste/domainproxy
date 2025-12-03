@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
-  subdomino:
+  subdomain:
     build: .
     volumes:
-      - subdomino_data:/app/data
+      - subdomain_data:/app/data
     environment:
       - NODE_ENV=production
       - CADDY_ADMIN_URL=http://caddy:2019
@@ -13,18 +11,20 @@ services:
 
   career-cms:
     build: ./cms
+    ports:
+      - "3001:3001"
     volumes:
       - cms_data:/app/data
     environment:
       - NODE_ENV=production
-      - SUBDOMINO_URL=http://subdomino:3000
-      - SUBDOMINO_API_KEY=saas_demo_123
+      - SUBDOMAIN_URL=http://subdomain:3000
+      - SUBDOMAIN_API_KEY=saas_demo_123
       - CMS_URL=http://career-cms:3001
     restart: unless-stopped
 
   caddy:
     image: caddy:alpine
-    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile --admin 0.0.0.0:2019
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     ports:
       - "80:80"
       - "443:443"
@@ -32,11 +32,11 @@ services:
       - caddy_data:/data
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     depends_on:
-      - subdomino
+      - subdomain
       - career-cms
     restart: unless-stopped
 
 volumes:
-  subdomino_data:
+  subdomain_data:
   cms_data:
   caddy_data:
