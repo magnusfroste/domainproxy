@@ -3,6 +3,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -156,13 +157,41 @@ Then visit career.lvh.me:${PORT}</p>
   });
 });
 
-app.post('/admin/create-tenant', requireAdminAuth, (req, res) => {
+app.post('/admin/create-tenant', requireAdminAuth, async (req, res) => {
   const { base_domain } = req.body;
   const api_key = 'sk_' + Math.random().toString(36).substr(2, 16);
-  db.run('INSERT INTO tenants (base_domain, api_key) VALUES (?, ?)', [base_domain.toLowerCase().trim(), api_key], (err) => {
+  const lower_domain = base_domain.toLowerCase().trim();
+  db.run('INSERT INTO tenants (base_domain, api_key) VALUES (?, ?)', [lower_domain, api_key], (err) => {
     if (err) {
       res.send(`Error: ${err.message}`);
     } else {
+      // Auto-configure Caddy
+      if (process.env.CADDY_ADMIN_URL && process.env.CADDY_EMAIL) {
+        const serverName = `proxy-${lower_domain.replace(/\./g, '-')}`;
+        const caddyConfig = {
+          "listen": [":443", ":80"],
+          "routes": [{
+            "match": [{
+              "host": [`*.${lower_domain}`]
+            }],
+            "handle": [{
+              "handler": "reverse_proxy",
+              "upstreams": [{
+                "dial": "subdomino:3000"
+              }]
+            }]
+          }],
+          "tls": {
+            "automation": {
+              "type": "acme"
+            },
+            "email": process.env.CADDY_EMAIL
+          }
+        };
+        axios.put(`${process.env.CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}/config`, caddyConfig)
+          .then(() => console.log(`✅ Caddy auto-configured for *.${lower_domain}`))
+          .catch(e => console.error(`❌ Caddy config failed for *.${lower_domain}:`, e.message));
+      }
       res.redirect('/admin');
     }
   });

@@ -7,6 +7,8 @@ services:
       - subdomino_data:/app/data
     environment:
       - NODE_ENV=production
+      - CADDY_ADMIN_URL=http://caddy:2019
+      - CADDY_EMAIL=admin@example.com
     restart: unless-stopped
 
   career-cms:
@@ -21,6 +23,7 @@ services:
 
   caddy:
     image: caddy:alpine
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile --admin 0.0.0.0:2019
     ports:
       - "80:80"
       - "443:443"

@@ -100,3 +100,45 @@ volumes:
 **Local Test:** docker compose up --build -d (full stack).
 
 Production live!
+
+## 🚀 Fully Automated Self-Hosted Deployment (No EasyPanel)
+
+**Proxy Service (Subdomino)**
+
+1. VPS (e.g. DigitalOcean $6/mo Ubuntu 22.04), firewall ufw allow 22,80,443.
+
+2. `apt update && apt install docker docker-compose`
+
+3. `git clone https://github.com/magnusfroste/domainproxy.git && cd domainproxy`
+
+4. Edit `.env`:
+   ```
+   CADDY_EMAIL=your@email.com
+   ADMIN_USER=admin
+   ADMIN_PASS=strongpass
+   ```
+
+5. `docker compose up -d`
+
+6. **DNS:** Namecheap → yourdomain.com → Advanced DNS → Add A Record `*` → VPS IP
+
+7. Visit `https://yourdomain.com/admin` (basic auth) → **Create tenant `yourdomain.com`** → **Auto-magically:**
+   - Caddy adds `*.yourdomain.com` site block
+   - Requests Let's Encrypt wildcard cert (~1min)
+   - API key generated & shown
+
+**Test:** POST `/api/v1/register-subdomain` X-API-Key:your_key {subdomain:"test", target_url:"https://httpbin.org"} → https://test.yourdomain.com
+
+---
+
+**Optional: Career CMS (separate VPS or same compose)**
+
+Deploy proxy first, note API base URL (yourdomain.com)
+
+CMS docker-compose.yml: set SUBDOMINO_URL=https://yourdomain.com
+
+`docker compose -f cms-docker-compose.yml up -d` (create separate)
+
+**Full local test:** `docker compose up` → https://career.lvh.me:443/admin → create froste.eu → https://career.froste.eu (after CMS tenant create)
+
+**Production ready!** Zero config beyond DNS + email.
