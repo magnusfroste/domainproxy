@@ -102,9 +102,10 @@ app.get('/dashboard', requireLogin, (req, res) => {
     if (err) tenants = [];
     const tenantList = tenants.map(t => `
       <li>
-        <strong>${t.subdomain}.${t.base_domain}</strong> 
+        <strong>${t.subdomain}.${t.base_domain}</strong>
+        <a href="https://${t.subdomain}.${t.base_domain}" target="_blank" style="margin-left:10px;">🌐 Live</a>
         <br>Content: ${t.content.substring(0, 100)}...
-        <br><a href="/dashboard/edit/${t.id}">Edit</a> | 
+        <br><a href="/dashboard/edit/${t.id}">Edit</a> |
         <form method="post" action="/dashboard/delete/${t.id}" style="display:inline;" onsubmit="return confirm('Delete?')">
           <button>Delete</button>
         </form>
