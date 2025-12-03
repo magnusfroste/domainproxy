@@ -144,26 +144,24 @@ app.post('/dashboard/create', requireLogin, async (req, res) => {
   const userId = req.session.userId;
   const { base_domain, subdomino_api_key, content, jobs, subdomain = 'career' } = req.body;
   try {
-    // Call Subdomino API
-    const subdominoRes = await axios.post(`${SUBDOMINO_URL}/api/v1/register-subdomain`, {
+    // Optional: Register with Subdomino proxy
+    await axios.post(`${SUBDOMINO_URL}/api/v1/register-subdomain`, {
       subdomain,
       target_url: `${CMS_URL}/career`
     }, {
       headers: { 'X-API-Key': subdomino_api_key }
     });
-    if (subdominoRes.data.success) {
-      // Save tenant
-      db.run(
-        'INSERT INTO tenants (user_id, base_domain, subdomain, subdomino_api_key, content, jobs) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, base_domain, subdomain, subdomino_api_key, content, jobs],
-        () => res.redirect('/dashboard')
-      );
-    } else {
-      res.send('Subdomino registration failed');
-    }
+    console.log(`✅ Proxy registered: ${subdomain}.${base_domain}`);
   } catch (err) {
-    res.send(`Error: ${err.message}`);
+    console.error(`❌ Proxy register failed: ${err.message}`);
+    // Continue - tenant saved anyway
   }
+  // Always save tenant
+  db.run(
+    'INSERT INTO tenants (user_id, base_domain, subdomain, subdomino_api_key, content, jobs) VALUES (?, ?, ?, ?, ?, ?)',
+    [userId, base_domain, subdomain, subdomino_api_key, content, jobs],
+    () => res.redirect('/dashboard')
+  );
 });
 
 app.get('/dashboard/edit/:id', requireLogin, (req, res) => {
