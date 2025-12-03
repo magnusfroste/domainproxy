@@ -172,7 +172,7 @@ app.post('/admin/create-tenant', requireAdminAuth, async (req, res) => {
           "listen": [":443", ":80"],
           "routes": [{
             "match": [{
-              "host": [`*.${lower_domain}`]
+              "host": [`${lower_domain}`, `*.${lower_domain}`]
             }],
             "handle": [{
               "handler": "reverse_proxy",
