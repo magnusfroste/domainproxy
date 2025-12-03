@@ -1,5 +1,5 @@
 {
-  "name": "subdomino",
+  "name": "domainproxy",
   "version": "1.0.0",
   "description": "Multi-tenant subdomain proxy service (Subdomino) - API for developers to register custom subdomains that proxy to their backends",
   "main": "server.js",

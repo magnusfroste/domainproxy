@@ -1,5 +1,5 @@
 {
-  "name": "career-cms-example",
+  "name": "domainproxy-career-cms",
   "version": "1.0.0",
   "description": "Multi-tenant Career CMS example integrating Subdomino proxy",
   "main": "server.js",
