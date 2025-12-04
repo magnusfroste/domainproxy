@@ -364,13 +364,22 @@ app.use((req, res, next) => {
   const subdomain = parts[0];
   const baseDomain = parts.slice(1).join('.');
 
+  console.log(`📥 Incoming host: ${host}, subdomain: ${subdomain}, baseDomain: ${baseDomain}, url: ${req.url}`);
+
   if (subdomain === 'www' || subdomain === 'localhost' || subdomain === 'lvh.me') return next();
 
   db.get(
     'SELECT p.target_url FROM proxies p JOIN tenants t ON p.tenant_id = t.id WHERE t.base_domain = ? AND p.subdomain = ?',
     [baseDomain, subdomain],
     (err, row) => {
-      if (err || !row) return next(); // Fallback
+      if (err) {
+        console.error('DB error looking up proxy:', err);
+        return next();
+      }
+      if (!row) {
+        console.log(`⚠️ No proxy found for subdomain=${subdomain}, baseDomain=${baseDomain}`);
+        return next(); // Fallback
+      }
 
       console.log(`🔄 Proxying ${host}${req.url} → ${row.target_url}`);
       const proxy = createProxyMiddleware({
