@@ -46,20 +46,13 @@ db.serialize(() => {
     FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE
   )`);
 
-  // Demo SaaS account and tenant for testing
+  // Demo SaaS account for testing
   const demoApiKey = 'saas_demo_123';
   db.get('SELECT id FROM saas_accounts WHERE api_key = ?', [demoApiKey], (err, row) => {
     if (!row) {
       db.run('INSERT INTO saas_accounts (api_key, name) VALUES (?, ?)', [demoApiKey, 'Demo SaaS'], function(err) {
         if (err) return console.error('Demo SaaS insert error:', err);
-        const saasId = this.lastID;
-        const demoBaseDomain = 'froste.eu';
-        db.get('SELECT id FROM tenants WHERE base_domain = ? AND saas_id = ?', [demoBaseDomain, saasId], (err, tenantRow) => {
-          if (!tenantRow) {
-            db.run('INSERT INTO tenants (saas_id, base_domain) VALUES (?, ?)', [saasId, demoBaseDomain]);
-            console.log(`💾 Demo tenant created: ${demoBaseDomain} for SaaS ${demoApiKey}`);
-          }
-        });
+        console.log(`💾 Demo SaaS account created: ${demoApiKey}`);
       });
     }
   });
