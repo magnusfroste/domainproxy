@@ -18,17 +18,10 @@ https://localhost {
   reverse_proxy subdomain:3000
 }
 
-# HTTPS lvh.me wildcard - with self-signed cert (optional)
 https://*.lvh.me {
   tls internal
   reverse_proxy subdomain:3000
 }
-
-# Prod wildcard example (*.froste.eu → Subdomain)
-# *.froste.eu {
-#   tls your-email@example.com  # Auto Let's Encrypt
-#   reverse_proxy subdomain:3000
-# }
 
 # Prod edge: SaaS proxy on new VPS
 proxy.froste.eu {
