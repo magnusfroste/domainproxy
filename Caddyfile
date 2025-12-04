@@ -28,6 +28,11 @@ proxy.froste.eu {
   reverse_proxy proxy:3000
 }
 
+# Demo customer domain (froste.eu) via proxy
+career.froste.eu {
+  reverse_proxy proxy:3000
+}
+
 *.proxy.froste.eu {
   reverse_proxy proxy:3000
 }
