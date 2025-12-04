@@ -1,3 +1,7 @@
+{
+  email magnus@froste.eu
+}
+
 # Localhost HTTP access (port 80)
 http://localhost {
   reverse_proxy subdomain:3000
@@ -27,10 +31,6 @@ https://*.lvh.me {
 # }
 
 # Prod edge: SaaS proxy on new VPS
-{
-  email magnus@froste.eu
-}
-
 proxy.froste.eu {
   reverse_proxy proxy:3000
 }
