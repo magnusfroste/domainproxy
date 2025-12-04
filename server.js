@@ -43,6 +43,7 @@ db.serialize(() => {
     subdomain TEXT NOT NULL,
     target_url TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, subdomain),
     FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE
   )`);
 
