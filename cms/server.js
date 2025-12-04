@@ -161,7 +161,7 @@ app.post('/dashboard/create', requireLogin, async (req, res) => {
     await axios.post(`${SUBDOMAIN_URL}/api/v1/register-subdomain`, {
       subdomain,
       base_domain,
-      target_url: `${CMS_URL}/career`
+      target_url: CMS_URL
     }, {
       headers: { 'X-API-Key': SUBDOMAIN_API_KEY }
     });
