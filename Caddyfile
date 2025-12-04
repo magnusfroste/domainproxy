@@ -25,3 +25,16 @@ https://*.lvh.me {
 #   tls your-email@example.com  # Auto Let's Encrypt
 #   reverse_proxy subdomain:3000
 # }
+
+# Prod edge: SaaS proxy on new VPS
+{
+  email magnus@froste.eu
+}
+
+proxy.froste.eu {
+  reverse_proxy proxy:3000
+}
+
+*.proxy.froste.eu {
+  reverse_proxy proxy:3000
+}
