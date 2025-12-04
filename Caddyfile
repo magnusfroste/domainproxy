@@ -25,14 +25,14 @@ https://*.lvh.me {
 
 # Prod edge: SaaS proxy on new VPS
 proxy.froste.eu {
-  reverse_proxy proxy:3000
+  reverse_proxy proxy:3000 {
+    header_up Host {host}
+  }
 }
 
 # Demo customer domain (froste.eu) via proxy
 career.froste.eu {
-  reverse_proxy proxy:3000
-}
-
-*.proxy.froste.eu {
-  reverse_proxy proxy:3000
+  reverse_proxy proxy:3000 {
+    header_up Host {host}
+  }
 }
