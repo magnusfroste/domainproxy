@@ -36,3 +36,16 @@ http://career.froste.eu {
     header_up Host {host}
   }
 }
+
+# HTTP-only test hosts (no HSTS history)
+http://proxy-test.froste.eu {
+  reverse_proxy proxy:3000 {
+    header_up Host {host}
+  }
+}
+
+http://career-test.froste.eu {
+  reverse_proxy proxy:3000 {
+    header_up Host {host}
+  }
+}
