@@ -10,6 +10,9 @@ const PORT = process.env.PORT || 3001;
 const SUBDOMAIN_URL = process.env.SUBDOMAIN_URL || 'http://localhost:3000';
 const SUBDOMAIN_API_KEY = process.env.SUBDOMAIN_API_KEY || 'saas_demo_123';
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001';
+const IS_DEV = process.env.NODE_ENV !== 'production';
+const DEMO_EMAIL = process.env.CMS_DEMO_EMAIL || 'demo1@froste.eu';
+const DEMO_PASSWORD = process.env.CMS_DEMO_PASSWORD || 'demo123';
 const DATA_DIR = path.join(__dirname, 'data');
 fs.ensureDirSync(DATA_DIR);
 
@@ -63,14 +66,16 @@ function requireLogin(req, res, next) {
 
 // Login
 app.get('/login', (req, res) => {
+  const emailValue = IS_DEV ? DEMO_EMAIL : '';
+  const passwordValue = IS_DEV ? DEMO_PASSWORD : '';
   res.send(`
 <!DOCTYPE html>
 <html><head><title>Career CMS Login</title><style>body{font-family:Arial;max-width:400px;margin:100px auto;padding:20px;}</style></head>
 <body>
 <h1>Login to Career CMS</h1>
 <form method="post" action="/login">
-  <input name="email" placeholder="email" required style="width:100%;padding:10px;margin:10px 0;">
-  <input name="password" type="password" placeholder="password" required style="width:100%;padding:10px;margin:10px 0;">
+  <input name="email" type="email" placeholder="email" value="${emailValue}" required style="width:100%;padding:10px;margin:10px 0;">
+  <input name="password" type="password" placeholder="password" value="${passwordValue}" required style="width:100%;padding:10px;margin:10px 0;">
   <button style="width:100%;padding:10px;background:#007bff;color:white;border:none;">Login</button>
 </form>
 <p>Demo: demo1@froste.eu / demo123 | demo2@liteit.se / demo123</p>
