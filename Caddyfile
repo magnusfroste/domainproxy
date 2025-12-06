@@ -1,5 +1,6 @@
 {
   email magnus@froste.eu
+  admin 0.0.0.0:2019
 }
 
 # Localhost HTTP access (port 80)
