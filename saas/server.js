@@ -9,21 +9,21 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const SUBDOMAIN_URL = process.env.SUBDOMAIN_URL || 'http://localhost:3000';
 const SUBDOMAIN_API_KEY = process.env.SUBDOMAIN_API_KEY || 'saas_demo_123';
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001';
+const SAAS_URL = process.env.SAAS_URL || 'http://localhost:3001';
 const IS_DEV = process.env.NODE_ENV !== 'production';
-const DEMO_EMAIL = process.env.CMS_DEMO_EMAIL || 'demo1@froste.eu';
-const DEMO_PASSWORD = process.env.CMS_DEMO_PASSWORD || 'demo123';
+const DEMO_EMAIL = process.env.SAAS_DEMO_EMAIL || 'demo1@froste.eu';
+const DEMO_PASSWORD = process.env.SAAS_DEMO_PASSWORD || 'demo123';
 const DATA_DIR = path.join(__dirname, 'data');
 fs.ensureDirSync(DATA_DIR);
 
-const DB_PATH = path.join(DATA_DIR, 'cms.db');
+const DB_PATH = path.join(DATA_DIR, 'saas.db');
 const db = new sqlite3.Database(DB_PATH);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(session({
-  secret: 'career-cms-secret',
+  secret: 'demo-saas-secret',
   resave: false,
   saveUninitialized: true,
   cookie: { secure: false }
@@ -70,9 +70,9 @@ app.get('/login', (req, res) => {
   const passwordValue = IS_DEV ? DEMO_PASSWORD : '';
   res.send(`
 <!DOCTYPE html>
-<html><head><title>Career CMS Login</title><style>body{font-family:Arial;max-width:400px;margin:100px auto;padding:20px;}</style></head>
+<html><head><title>Demo SaaS Login</title><style>body{font-family:Arial;max-width:400px;margin:100px auto;padding:20px;}</style></head>
 <body>
-<h1>Login to Career CMS</h1>
+<h1>Login to Demo SaaS</h1>
 <form method="post" action="/login">
   <input name="email" type="email" placeholder="email" value="${emailValue}" required style="width:100%;padding:10px;margin:10px 0;">
   <input name="password" type="password" placeholder="password" value="${passwordValue}" required style="width:100%;padding:10px;margin:10px 0;">
@@ -124,14 +124,14 @@ app.get('/dashboard', requireLogin, (req, res) => {
 
     res.send(`
 <!DOCTYPE html>
-<html><head><title>Career CMS Dashboard</title>
+<html><head><title>Demo SaaS Dashboard</title>
 <style>body{font-family:Arial;max-width:900px;margin:50px auto;padding:20px;}
 form{margin:20px 0;}input,textarea{width:100%;padding:10px;box-sizing:border-box;}
 button{padding:10px 20px;background:#007bff;color:white;border:none;cursor:pointer;}
 li{padding:10px;border:1px solid #ddd;margin:10px 0;}</style>
 </head>
 <body>
-<h1>Career CMS Dashboard</h1>
+<h1>Demo SaaS Dashboard</h1>
 <p><a href="/logout">Logout</a></p>
 
 <h3>Create Tenant (Custom Domain)</h3>
@@ -166,7 +166,7 @@ app.post('/dashboard/create', requireLogin, async (req, res) => {
     await axios.post(`${SUBDOMAIN_URL}/api/v1/register-subdomain`, {
       subdomain,
       base_domain,
-      target_url: CMS_URL
+      target_url: SAAS_URL
     }, {
       headers: { 'X-API-Key': SUBDOMAIN_API_KEY }
     });
@@ -236,9 +236,9 @@ app.get(['/career', '/career/*'], (req, res) => {
       if (!tenant) {
         return res.send(`
 <!DOCTYPE html>
-<html><head><title>Career Page Not Found</title></head>
-<body><h1>Career page for ${baseDomain} not configured</h1>
-<p>Configure at <a href="/login">Career CMS</a></p></body></html>
+<html><head><title>Page Not Found</title></head>
+<body><h1>Tenant page for ${baseDomain} not configured</h1>
+<p>Configure at <a href="/login">Demo SaaS</a></p></body></html>
         `);
       }
 
@@ -254,7 +254,7 @@ app.get(['/career', '/career/*'], (req, res) => {
 
       res.send(`
 <!DOCTYPE html>
-<html><head><title>Careers at ${baseDomain}</title>
+<html><head><title>${baseDomain} Careers</title>
 <style>body{font-family:Arial;max-width:800px;margin:0 auto;padding:20px;}</style>
 </head>
 <body>
@@ -262,7 +262,7 @@ app.get(['/career', '/career/*'], (req, res) => {
 <div>${tenant.content}</div>
 <h2>Open Positions</h2>
 ${jobsHtml || '<p>No jobs posted yet.</p>'}
-<footer>Powered by Career CMS</footer>
+<footer>Powered by Demo SaaS</footer>
 </body></html>
       `);
     }
@@ -270,8 +270,8 @@ ${jobsHtml || '<p>No jobs posted yet.</p>'}
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Career CMS running on http://localhost:${PORT}`);
+  console.log(`🚀 Demo SaaS running on http://localhost:${PORT}`);
   console.log(`📝 Login: http://localhost:${PORT}/login (demo1@froste.eu/demo123)`);
   console.log(`🔑 Subdomain API Key: ${SUBDOMAIN_API_KEY}`);
-  console.log(`🌐 Career pages: https://career.customerdomain.com (after DNS CNAME setup)`);
+  console.log(`🌐 Tenant pages: https://career.customerdomain.com (after DNS CNAME setup)`);
 });

@@ -1,18 +1,18 @@
 services:
-  subdomain:
+  domainproxy:
     build: .
     volumes:
-      - subdomain_data:/app/data
+      - proxy_data:/app/data
     env_file:
       - .env
     restart: unless-stopped
 
-  career-cms:
-    build: ./cms
+  saas-app:
+    build: ./saas
     ports:
       - "3001:3001"
     volumes:
-      - cms_data:/app/data
+      - saas_data:/app/data
     env_file:
       - .env
     restart: unless-stopped
@@ -27,11 +27,11 @@ services:
       - caddy_data:/data
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     depends_on:
-      - subdomain
-      - career-cms
+      - domainproxy
+      - saas-app
     restart: unless-stopped
 
 volumes:
-  subdomain_data:
-  cms_data:
+  proxy_data:
+  saas_data:
   caddy_data:

@@ -61,7 +61,7 @@ db.serialize(() => {
 
 const CADDY_ADMIN_URL = process.env.CADDY_ADMIN_URL;
 const CADDY_EMAIL = process.env.CADDY_EMAIL;
-const CADDY_UPSTREAM = process.env.CADDY_UPSTREAM || 'subdomain:3000';
+const CADDY_UPSTREAM = process.env.CADDY_UPSTREAM || 'domainproxy:3000';
 
 // Provision Caddy for a specific hostname (e.g. career.example.com)
 function provisionCaddyHost(subdomain, baseDomain) {

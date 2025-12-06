@@ -1,4 +1,4 @@
-# DomainProxy: SaaS Subdomain Proxy Service & Career CMS Demo
+# DomainProxy: SaaS Subdomain Proxy Service & Demo SaaS App
 
 ## Product Overview
 
@@ -18,7 +18,7 @@ SaaS platforms need to let customers create custom subdomains for their branded 
 3. **Instant Activation:** Visitors access `https://career.companyname.com` which proxies to your SaaS tenant's page.
 
 ### Example Use Case: Career ATS SaaS
-- SaaS: Career CMS (included demo)
+- SaaS: Demo SaaS app (included sample)
 - Customer: "Acme Corp" wants `career.acmecorp.com`
 - DNS: `CNAME career acmecorp.com` → DomainProxy IP
 - SaaS: Register via API: `subdomain: "career", target_url: "https://your-saas.com/tenant/acme"`
@@ -60,20 +60,20 @@ curl -X POST https://yourproxy.com/api/v1/register-subdomain \
   ```
 - **Visit:** https://career.froste.eu
 
-### Career CMS: SaaS Integration Example
+### Demo SaaS Integration Example
 
-The Career CMS demonstrates a complete SaaS integration with Subdomain:
+The bundled Demo SaaS illustrates how a typical platform plugs into DomainProxy:
 
-1. **Customer Signs Up:** User logs into CMS (e.g., demo1@froste.eu/demo123).
+1. **Customer Signs Up:** User logs into the SaaS admin (e.g., demo1@froste.eu/demo123).
 2. **Configure Domain:** In dashboard, enter `base_domain` (e.g., customer.com) and `subdomain` (e.g., career).
-3. **Auto-Register:** CMS calls Subdomain API to create tenant and register subdomain.
-4. **DNS Setup:** Customer points CNAME `career` → your Subdomain IP.
-5. **Live Page:** Visitors access `https://career.customer.com` for branded career page.
+3. **Auto-Register:** The SaaS calls DomainProxy API to create the tenant and register the subdomain.
+4. **DNS Setup:** Customer points CNAME `career` → your DomainProxy IP.
+5. **Live Page:** Visitors access `https://career.customer.com` for the branded experience.
 
-**CMS Config:** Set `SUBDOMAIN_API_KEY` to your SaaS API key (e.g., `saas_demo_123`).
+**Demo SaaS Config:** Set `SUBDOMAIN_API_KEY` to your SaaS API key (e.g., `saas_demo_123`).
 
 **Test Locally:**
-- CMS: http://localhost:3001/login
+- SaaS app: http://localhost:3001/login
 - Create tenant: base_domain=froste.eu, subdomain=career
 - Check proxy registered: GET /api/v1/proxies with X-API-Key: saas_demo_123
 
@@ -139,32 +139,32 @@ yourdomain.com {
 
 **Access:** https://yourdomain.com/admin (admin/admin123)
 
-### 2. Career CMS Instance (Separate App)
+### 2. Demo SaaS Instance (Separate App)
 **EasyPanel → New App → Docker Compose**
 ```
 version: '3.8'
 
 services:
-  career-cms:
+  demo-saas:
     build: .
     ports:
       - "3001:3001"
     volumes:
-      - cms_data:/app/data
+      - saas_data:/app/data
     environment:
       - NODE_ENV=production
       - SUBDOMAIN_URL=https://yourdomain.com  # Proxy instance URL
     restart: unless-stopped
 
 volumes:
-  cms_data:
+  saas_data:
 ```
 
-**Upload:** cms/ folder as Git or zip.
+**Upload:** `saas/` folder as Git or zip.
 
-**Domain:** cms.yourdomain.com (or IP:3001).
+**Domain:** saas.yourdomain.com (or IP:3001).
 
-**Access:** https://cms.yourdomain.com:3001/login (demo1@froste.eu/demo123)
+**Access:** https://saas.yourdomain.com:3001/login (demo1@froste.eu/demo123)
 
 ### 3. Test Flow
 1. Proxy Admin: Create tenant "froste.eu" API key.
@@ -206,13 +206,13 @@ Production live!
 
 ---
 
-**Optional: Career CMS (separate VPS or same compose)**
+**Optional: Demo SaaS (separate VPS or same compose)**
 
 Deploy proxy first, note API base URL (yourdomain.com)
 
-CMS docker-compose.yml: set SUBDOMAIN_URL=https://yourdomain.com
+SaaS docker-compose.yml: set SUBDOMAIN_URL=https://yourdomain.com
 
-`docker compose -f cms-docker-compose.yml up -d` (create separate)
+`docker compose -f saas-docker-compose.yml up -d` (create separate)
 
 **Full local test:** `docker compose up` → https://career.lvh.me:443/admin → create froste.eu → https://career.froste.eu (after CMS tenant create)
 
