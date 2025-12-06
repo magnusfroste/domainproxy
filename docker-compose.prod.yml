@@ -4,11 +4,8 @@ services:
   proxy:
     build: .
     container_name: domainproxy
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      ADMIN_USER: admin
-      ADMIN_PASS: admin123
+    env_file:
+      - .env
     volumes:
       - proxy_data:/app/data
     restart: unless-stopped

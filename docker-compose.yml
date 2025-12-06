@@ -3,10 +3,8 @@ services:
     build: .
     volumes:
       - subdomain_data:/app/data
-    environment:
-      - NODE_ENV=production
-      - CADDY_ADMIN_URL=http://caddy:2019
-      - CADDY_EMAIL=admin@example.com
+    env_file:
+      - .env
     restart: unless-stopped
 
   career-cms:
@@ -15,11 +13,8 @@ services:
       - "3001:3001"
     volumes:
       - cms_data:/app/data
-    environment:
-      - NODE_ENV=production
-      - SUBDOMAIN_URL=http://subdomain:3000
-      - SUBDOMAIN_API_KEY=saas_demo_123
-      - CMS_URL=http://career-cms:3001
+    env_file:
+      - .env
     restart: unless-stopped
 
   caddy:

@@ -59,34 +59,43 @@ db.serialize(() => {
   });
 });
 
-// Auto-configure Caddy for new tenant
-function autoConfigureCaddy(baseDomain) {
-  if (process.env.CADDY_ADMIN_URL && process.env.CADDY_EMAIL) {
-    const serverName = `proxy-${baseDomain.replace(/\./g, '-')}`;
-    const caddyConfig = {
-      "listen": [":443", ":80"],
-      "routes": [{
-        "match": [{
-          "host": [`${baseDomain}`, `*.${baseDomain}`]
-        }],
-        "handle": [{
-          "handler": "reverse_proxy",
-          "upstreams": [{
-            "dial": "subdomain:3000"
+const CADDY_ADMIN_URL = process.env.CADDY_ADMIN_URL;
+const CADDY_EMAIL = process.env.CADDY_EMAIL;
+const CADDY_UPSTREAM = process.env.CADDY_UPSTREAM || 'subdomain:3000';
+
+// Provision Caddy for a specific hostname (e.g. career.example.com)
+function provisionCaddyHost(subdomain, baseDomain) {
+  if (!CADDY_ADMIN_URL || !CADDY_EMAIL) return;
+  const hostname = `${subdomain}.${baseDomain}`;
+  const serverName = `proxy-${hostname.replace(/\./g, '-')}`;
+  const caddyConfig = {
+    listen: [":443", ":80"],
+    routes: [{
+      match: [{ host: [hostname] }],
+      handle: [{
+        handler: "reverse_proxy",
+        upstreams: [{ dial: CADDY_UPSTREAM }]
+      }]
+    }],
+    tls: {
+      automation: {
+        policies: [{
+          subjects: [hostname],
+          issuers: [{
+            module: "acme",
+            email: CADDY_EMAIL
           }]
         }]
-      }],
-      "tls": {
-        "automation": {
-          "type": "acme"
-        },
-        "email": process.env.CADDY_EMAIL
       }
-    };
-    axios.put(`${process.env.CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}/config`, caddyConfig)
-      .then(() => console.log(`✅ Caddy auto-configured for *.${baseDomain}`))
-      .catch(e => console.error(`❌ Caddy config failed for *.${baseDomain}:`, e.message));
-  }
+    }
+  };
+
+  axios.put(`${CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}`, caddyConfig)
+    .then(() => console.log(`✅ Caddy provisioned for ${hostname}`))
+    .catch(e => {
+      const details = e.response?.data || e.message;
+      console.error(`❌ Caddy config failed for ${hostname}:`, details);
+    });
 }
 
 // API: Create tenant (customer domain)
@@ -106,7 +115,6 @@ app.post('/api/v1/create-tenant', apiAuth, (req, res) => {
     // Create new tenant
     db.run('INSERT INTO tenants (saas_id, base_domain) VALUES (?, ?)', [saasId, lowerDomain], function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      autoConfigureCaddy(lowerDomain);
       res.json({ success: true, tenant_id: this.lastID, base_domain: lowerDomain });
     });
   });
@@ -162,8 +170,6 @@ app.post('/api/v1/register-subdomain', apiAuth, (req, res) => {
       db.run('INSERT INTO tenants (saas_id, base_domain) VALUES (?, ?)', [saasId, lowerDomain], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         tenantId = this.lastID;
-        // Auto-configure Caddy for new tenant
-        autoConfigureCaddy(lowerDomain);
         insertProxy();
       });
     } else {
@@ -176,6 +182,7 @@ app.post('/api/v1/register-subdomain', apiAuth, (req, res) => {
         [tenantId, lowerSubdomain, target_url],
         function(err) {
           if (err) return res.status(500).json({ error: err.message });
+          provisionCaddyHost(lowerSubdomain, lowerDomain);
           res.json({
             success: true,
             subdomain: lowerSubdomain,
