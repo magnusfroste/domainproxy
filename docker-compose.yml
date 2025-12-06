@@ -19,7 +19,7 @@ services:
 
   caddy:
     image: caddy:alpine
-    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile --admin 0.0.0.0:2019
     ports:
       - "80:80"
       - "443:443"

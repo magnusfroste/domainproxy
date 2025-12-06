@@ -29,7 +29,16 @@ SaaS platforms need to let customers create custom subdomains for their branded 
 - **Proxy Service:** Express.js server with SQLite database
 - **Auto SSL:** Integrates with Caddy for automatic Let's Encrypt certificates
 - **Multi-tenant:** Isolated by API keys per customer domain
-- **Demo CMS:** Full-stack SaaS example (career pages for customers)
+- **Demo SaaS:** Full-stack example that auto-registers customer subdomains
+
+### How the Proxy & SaaS Deliver Custom Domains
+
+1. **DNS points to the proxy:** Every customer CNAME (e.g., `career.companyname.com`) resolves to your DomainProxy host (`proxy.yourdomain.com`). Visitors always hit the proxy first.
+2. **SaaS registers the mapping:** The SaaS app calls `POST /api/v1/register-subdomain` with `subdomain`, `base_domain`, and its own public URL (`target_url`). DomainProxy stores that mapping and programs Caddy via the admin API.
+3. **Caddy issues TLS + forwards traffic:** When a visitor requests `https://career.companyname.com`, Caddy terminates HTTPS using the automatically issued certificate, keeps the original `Host` header, and forwards the request to the configured upstream.
+4. **SaaS detects the tenant:** The SaaS app inspects `Host` (still `career.companyname.com`), looks up the tenant by `base_domain`, and renders the correct content—even though it physically lives on `saas.yourdomain.com`.
+
+Result: customers only configure DNS once, every custom domain gets valid HTTPS automatically, and your SaaS serves tenant-specific pages without managing certificates per customer.
 
 ## API Quick Start
 
