@@ -16,6 +16,24 @@ const db = new sqlite3.Database(DB_PATH);
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
+// In-memory log buffer for /admin/logs endpoint
+const LOG_BUFFER_SIZE = 500;
+const logBuffer = [];
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+console.log = (...args) => {
+  const line = `[${new Date().toISOString()}] ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}`;
+  logBuffer.push(line);
+  if (logBuffer.length > LOG_BUFFER_SIZE) logBuffer.shift();
+  originalConsoleLog.apply(console, args);
+};
+console.error = (...args) => {
+  const line = `[${new Date().toISOString()}] ERROR: ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}`;
+  logBuffer.push(line);
+  if (logBuffer.length > LOG_BUFFER_SIZE) logBuffer.shift();
+  originalConsoleError.apply(console, args);
+};
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -426,6 +444,17 @@ app.post('/admin/delete-saas', requireAdminAuth, (req, res) => {
       res.redirect('/admin');
     }
   });
+});
+
+// Admin logs endpoint (returns last N log lines as JSON or plain text)
+app.get('/admin/logs', requireAdminAuth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 100, LOG_BUFFER_SIZE);
+  const lines = logBuffer.slice(-limit);
+  if (req.query.format === 'json') {
+    res.json({ count: lines.length, logs: lines });
+  } else {
+    res.type('text/plain').send(lines.join('\n'));
+  }
 });
 
 // Dynamic Proxy Middleware (catch-all)
