@@ -1,6 +1,12 @@
 {
   email magnus@froste.eu
   admin 0.0.0.0:2019
+  
+  # On-demand TLS: Caddy will provision certs for any hostname on first request
+  # The ask endpoint validates if the hostname should get a cert
+  on_demand_tls {
+    ask http://proxy:3000/api/v1/verify-domain
+  }
 }
 
 # Localhost HTTP access (port 80)
@@ -31,21 +37,20 @@ proxy.froste.eu {
   }
 }
 
-# Demo customer domain (froste.eu) via proxy (HTTPS + HTTP)
-career.froste.eu {
+# Catch-all for any customer domain with on-demand TLS
+# Caddy provisions certs automatically when a request comes in
+# and the /api/v1/verify-domain endpoint confirms the domain is registered
+https:// {
+  tls {
+    on_demand
+  }
   reverse_proxy proxy:3000 {
     header_up Host {host}
   }
 }
 
-# HTTP-only test hosts (no HSTS history)
-http://proxy-test.froste.eu {
-  reverse_proxy proxy:3000 {
-    header_up Host {host}
-  }
-}
-
-http://career-test.froste.eu {
+# HTTP catch-all (redirects to HTTPS or serves ACME challenges)
+http:// {
   reverse_proxy proxy:3000 {
     header_up Host {host}
   }

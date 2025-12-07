@@ -108,50 +108,25 @@ function updateProvisionStatus(tenantId, subdomain, status, message) {
   );
 }
 
-// Provision Caddy for a specific hostname (e.g. career.example.com)
+// Provision Caddy for a specific hostname
+// With on-demand TLS, Caddy will automatically provision certs when a request comes in
+// and the /api/v1/verify-domain endpoint confirms the domain is registered.
+// This function just logs and updates status - no Caddy API calls needed.
 function provisionCaddyHost(subdomain, baseDomain, tenantId) {
-  if (!CADDY_ADMIN_URL || !CADDY_EMAIL) return Promise.resolve();
   const hostname = `${subdomain}.${baseDomain}`;
-  const serverName = `proxy-${hostname.replace(/\./g, '-')}`;
-  // Minimal server config; Caddy's global TLS automation (from Caddyfile) handles certs
-  const caddyConfig = {
-    listen: [":443", ":80"],
-    routes: [{
-      match: [{ host: [hostname] }],
-      handle: [{
-        handler: "reverse_proxy",
-        upstreams: [{ dial: CADDY_UPSTREAM }]
-      }]
-    }]
-  };
-
-  return axios.put(`${CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}`, caddyConfig)
-    .then(() => {
-      console.log(`✅ Caddy provisioned for ${hostname}`);
-      if (tenantId) updateProvisionStatus(tenantId, subdomain, 'success', 'Certificate provisioning triggered');
-      return { status: 'success' };
-    })
-    .catch(e => {
-      const details = e.response?.data || e.message;
-      console.error(`❌ Caddy config failed for ${hostname}:`, details);
-      if (tenantId) updateProvisionStatus(tenantId, subdomain, 'error', JSON.stringify(details));
-      return { status: 'error', error: details };
-    });
+  console.log(`✅ Domain registered: ${hostname} - Caddy will provision cert on first request`);
+  if (tenantId) {
+    updateProvisionStatus(tenantId, subdomain, 'pending', 'Certificate will be provisioned on first HTTPS request');
+  }
+  return Promise.resolve({ status: 'pending' });
 }
 
+// Delete Caddy host - with on-demand TLS, just removing from DB is enough
+// Caddy's verify-domain endpoint will return 404 for unregistered domains
 function deleteCaddyHost(subdomain, baseDomain) {
-  if (!CADDY_ADMIN_URL) return Promise.resolve();
   const hostname = `${subdomain}.${baseDomain}`;
-  const serverName = `proxy-${hostname.replace(/\./g, '-')}`;
-  return axios.delete(`${CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}`)
-    .then(() => console.log(`🗑️ Caddy removed config for ${hostname}`))
-    .catch(e => {
-      if (e.response?.status === 404) {
-        console.log(`ℹ️ Caddy config for ${hostname} already removed`);
-      } else {
-        console.error(`⚠️ Failed to delete Caddy config for ${hostname}:`, e.response?.data || e.message);
-      }
-    });
+  console.log(`🗑️ Domain removed: ${hostname} - Caddy will reject future cert requests`);
+  return Promise.resolve();
 }
 
 // API: Create tenant (customer domain)
@@ -301,6 +276,45 @@ app.get('/api/v1/status', (req, res) => {
     timestamp: new Date().toISOString(),
     caddy_admin: CADDY_ADMIN_URL || 'not configured'
   });
+});
+
+// API: Verify domain for Caddy on-demand TLS
+// Caddy calls this endpoint to check if a domain should get a certificate
+// Returns 200 if domain is registered, 404 otherwise
+app.get('/api/v1/verify-domain', (req, res) => {
+  const domain = req.query.domain;
+  if (!domain) {
+    console.log('🔒 Caddy verify-domain: no domain provided');
+    return res.status(400).send('domain required');
+  }
+  
+  const parts = domain.toLowerCase().split('.');
+  if (parts.length < 2) {
+    console.log(`🔒 Caddy verify-domain: invalid domain format: ${domain}`);
+    return res.status(404).send('invalid domain');
+  }
+  
+  const subdomain = parts[0];
+  const baseDomain = parts.slice(1).join('.');
+  
+  // Check if this subdomain is registered in our database
+  db.get(
+    'SELECT p.id FROM proxies p JOIN tenants t ON p.tenant_id = t.id WHERE t.base_domain = ? AND p.subdomain = ?',
+    [baseDomain, subdomain],
+    (err, row) => {
+      if (err) {
+        console.error('🔒 Caddy verify-domain DB error:', err);
+        return res.status(500).send('db error');
+      }
+      if (row) {
+        console.log(`🔒 Caddy verify-domain: ✅ ${domain} is registered`);
+        return res.status(200).send('ok');
+      } else {
+        console.log(`🔒 Caddy verify-domain: ❌ ${domain} not registered`);
+        return res.status(404).send('not found');
+      }
+    }
+  );
 });
 
 // API: Integration guide (serves lovable.md content as JSON for AI tools)
