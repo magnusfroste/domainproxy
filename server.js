@@ -43,9 +43,24 @@ db.serialize(() => {
     subdomain TEXT NOT NULL,
     target_url TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_id, subdomain),
-    FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE
+    last_provision_status TEXT,
+    last_provision_message TEXT,
+    last_provisioned_at DATETIME,
+    FOREIGN KEY (tenant_id) REFERENCES tenants (id),
+    UNIQUE(tenant_id, subdomain)
   )`);
+
+  // Ensure legacy dbs have new columns
+  ['last_provision_status', 'last_provision_message', 'last_provisioned_at'].forEach(column => {
+    db.run(
+      `ALTER TABLE proxies ADD COLUMN ${column} ${column === 'last_provisioned_at' ? 'DATETIME' : 'TEXT'}`,
+      err => {
+        if (err && !err.message.includes('duplicate column')) {
+          console.error(`Schema migration warning (${column}):`, err.message);
+        }
+      }
+    );
+  });
 
   // Demo SaaS account for testing
   const demoApiKey = 'saas_demo_123';
@@ -63,9 +78,21 @@ const CADDY_ADMIN_URL = process.env.CADDY_ADMIN_URL;
 const CADDY_EMAIL = process.env.CADDY_EMAIL;
 const CADDY_UPSTREAM = process.env.CADDY_UPSTREAM || 'domainproxy:3000';
 
+function updateProvisionStatus(tenantId, subdomain, status, message) {
+  db.run(
+    `UPDATE proxies 
+     SET last_provision_status = ?, last_provision_message = ?, last_provisioned_at = CURRENT_TIMESTAMP 
+     WHERE tenant_id = ? AND subdomain = ?`,
+    [status, message?.toString().slice(0, 500) || null, tenantId, subdomain],
+    err => {
+      if (err) console.error('Failed to update provision status:', err);
+    }
+  );
+}
+
 // Provision Caddy for a specific hostname (e.g. career.example.com)
-function provisionCaddyHost(subdomain, baseDomain) {
-  if (!CADDY_ADMIN_URL || !CADDY_EMAIL) return;
+function provisionCaddyHost(subdomain, baseDomain, tenantId) {
+  if (!CADDY_ADMIN_URL || !CADDY_EMAIL) return Promise.resolve();
   const hostname = `${subdomain}.${baseDomain}`;
   const serverName = `proxy-${hostname.replace(/\./g, '-')}`;
   const caddyConfig = {
@@ -90,11 +117,32 @@ function provisionCaddyHost(subdomain, baseDomain) {
     }
   };
 
-  axios.put(`${CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}`, caddyConfig)
-    .then(() => console.log(`✅ Caddy provisioned for ${hostname}`))
+  return axios.put(`${CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}`, caddyConfig)
+    .then(() => {
+      console.log(`✅ Caddy provisioned for ${hostname}`);
+      if (tenantId) updateProvisionStatus(tenantId, subdomain, 'success', 'Certificate provisioning triggered');
+      return { status: 'success' };
+    })
     .catch(e => {
       const details = e.response?.data || e.message;
       console.error(`❌ Caddy config failed for ${hostname}:`, details);
+      if (tenantId) updateProvisionStatus(tenantId, subdomain, 'error', JSON.stringify(details));
+      return { status: 'error', error: details };
+    });
+}
+
+function deleteCaddyHost(subdomain, baseDomain) {
+  if (!CADDY_ADMIN_URL) return Promise.resolve();
+  const hostname = `${subdomain}.${baseDomain}`;
+  const serverName = `proxy-${hostname.replace(/\./g, '-')}`;
+  return axios.delete(`${CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}`)
+    .then(() => console.log(`🗑️ Caddy removed config for ${hostname}`))
+    .catch(e => {
+      if (e.response?.status === 404) {
+        console.log(`ℹ️ Caddy config for ${hostname} already removed`);
+      } else {
+        console.error(`⚠️ Failed to delete Caddy config for ${hostname}:`, e.response?.data || e.message);
+      }
     });
 }
 
@@ -182,7 +230,7 @@ app.post('/api/v1/register-subdomain', apiAuth, (req, res) => {
         [tenantId, lowerSubdomain, target_url],
         function(err) {
           if (err) return res.status(500).json({ error: err.message });
-          provisionCaddyHost(lowerSubdomain, lowerDomain);
+          provisionCaddyHost(lowerSubdomain, lowerDomain, tenantId);
           res.json({
             success: true,
             subdomain: lowerSubdomain,
@@ -206,6 +254,34 @@ app.get('/api/v1/proxies', apiAuth, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
+});
+
+// API: Delete proxy mapping (and Caddy host)
+app.post('/api/v1/delete-proxy', apiAuth, (req, res) => {
+  const { subdomain, base_domain } = req.body;
+  if (!subdomain || !base_domain) {
+    return res.status(400).json({ error: 'subdomain and base_domain required' });
+  }
+  const lowerDomain = base_domain.toLowerCase().trim();
+  const lowerSubdomain = subdomain.toLowerCase().trim();
+
+  db.get(
+    `SELECT p.id, p.tenant_id FROM proxies p 
+     JOIN tenants t ON p.tenant_id = t.id 
+     WHERE t.saas_id = ? AND t.base_domain = ? AND p.subdomain = ?`,
+    [req.saas.id, lowerDomain, lowerSubdomain],
+    (err, proxy) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!proxy) return res.status(404).json({ error: 'Proxy not found' });
+
+      db.run('DELETE FROM proxies WHERE id = ?', [proxy.id], deleteErr => {
+        if (deleteErr) return res.status(500).json({ error: deleteErr.message });
+        deleteCaddyHost(lowerSubdomain, lowerDomain).finally(() => {
+          res.json({ success: true, deleted: `${lowerSubdomain}.${lowerDomain}` });
+        });
+      });
+    }
+  );
 });
 
 // Admin Panel
