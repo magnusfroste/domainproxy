@@ -481,10 +481,13 @@ summary:hover{color:#22c55e;}
 <p class="subtitle">Manage your SaaS accounts and API keys</p>
 
 <div class="quick-start">
-  <h3>🚀 Quick Start</h3>
+  <h3>☁️ DomainProxy Cloud</h3>
+  <p>You're using the managed cloud version — no infrastructure to manage!</p>
+  <p style="margin-top:15px;"><strong>Quick Start:</strong></p>
   <p>1. Create a SaaS account below to get your API key</p>
   <p>2. Use the API to register subdomains for your customers</p>
   <p>3. Point your AI assistant at: <a href="/api/v1/integration-guide">/api/v1/integration-guide</a></p>
+  <p style="margin-top:15px;font-size:0.9em;color:#666;">Want to self-host? <a href="https://github.com/magnusfroste/domainproxy" target="_blank">View on GitHub →</a></p>
 </div>
 
 <h2>Your SaaS Accounts</h2>
@@ -676,10 +679,23 @@ th{color:#888;font-weight:normal;}
 </nav>
 <div class="container">
 <h1>API Documentation</h1>
-<p class="subtitle">Complete reference for the DomainProxy API</p>
+<p class="subtitle">Complete reference for the DomainProxy API — works with both Cloud and Self-Hosted</p>
+
+<div style="background:#111;border:1px solid #222;border-radius:8px;padding:20px;margin:20px 0;display:flex;gap:20px;flex-wrap:wrap;">
+  <div style="flex:1;min-width:200px;">
+    <h4 style="color:#22c55e;margin:0 0 5px;">☁️ Cloud</h4>
+    <code>https://proxy.froste.eu</code>
+  </div>
+  <div style="flex:1;min-width:200px;">
+    <h4 style="color:#888;margin:0 0 5px;">🏠 Self-Hosted</h4>
+    <code>https://your-domain.com</code>
+  </div>
+</div>
 
 <h2>Authentication</h2>
 <p>All API requests require an <code>X-API-Key</code> header with your SaaS API key.</p>
+<p><strong>Cloud users:</strong> Get your API key at <a href="/admin">/admin</a></p>
+<p><strong>Self-hosted:</strong> Create API keys in your own admin panel</p>
 <pre><code>curl -X POST https://proxy.froste.eu/api/v1/create-tenant \\
   -H "X-API-Key: your_api_key" \\
   -H "Content-Type: application/json" \\
@@ -789,39 +805,87 @@ app.use((req, res) => {
 <style>
 *{box-sizing:border-box;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#0a0a0a;color:#e5e5e5;line-height:1.6;}
-.hero{text-align:center;padding:80px 20px;background:linear-gradient(135deg,#0a0a0a 0%,#1a1a2e 100%);}
-.hero h1{font-size:3rem;margin-bottom:10px;color:#fff;}
-.hero .subtitle{font-size:1.3rem;color:#888;max-width:600px;margin:0 auto 30px;}
-.badge{display:inline-block;background:#22c55e;color:#000;padding:6px 14px;border-radius:20px;font-size:0.85rem;font-weight:600;margin-bottom:20px;}
-.cta{display:inline-block;background:#22c55e;color:#000;padding:14px 32px;border-radius:8px;font-weight:600;text-decoration:none;margin:10px;transition:transform 0.2s;}
-.cta:hover{transform:translateY(-2px);}
-.cta.secondary{background:#333;color:#fff;}
-.container{max-width:1000px;margin:0 auto;padding:60px 20px;}
-.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:30px;margin:40px 0;}
-.feature{background:#111;border:1px solid #222;border-radius:12px;padding:30px;}
-.feature h3{color:#22c55e;margin-top:0;}
-.comparison{background:#111;border-radius:12px;padding:40px;margin:40px 0;}
-.comparison h2{text-align:center;margin-bottom:30px;}
+.hero{text-align:center;padding:100px 20px 80px;background:linear-gradient(135deg,#0a0a0a 0%,#1a1a2e 50%,#0a0a0a 100%);}
+.hero h1{font-size:3.5rem;margin-bottom:15px;color:#fff;letter-spacing:-1px;}
+.hero h1 span{background:linear-gradient(135deg,#22c55e,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero .subtitle{font-size:1.4rem;color:#888;max-width:650px;margin:0 auto 35px;}
+.badge{display:inline-block;background:linear-gradient(135deg,#22c55e20,#3b82f620);border:1px solid #22c55e40;color:#22c55e;padding:8px 18px;border-radius:25px;font-size:0.9rem;font-weight:500;margin-bottom:25px;}
+.cta{display:inline-block;background:#22c55e;color:#000;padding:16px 36px;border-radius:10px;font-weight:600;text-decoration:none;margin:8px;transition:all 0.2s;font-size:1rem;}
+.cta:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(34,197,94,0.3);}
+.cta.secondary{background:#222;color:#fff;border:1px solid #333;}
+.cta.secondary:hover{background:#333;box-shadow:0 10px 30px rgba(0,0,0,0.3);}
+.container{max-width:1100px;margin:0 auto;padding:80px 20px;}
+.section-title{text-align:center;font-size:2.2rem;margin-bottom:15px;color:#fff;}
+.section-subtitle{text-align:center;color:#888;max-width:600px;margin:0 auto 50px;font-size:1.1rem;}
+
+/* Deployment options */
+.deploy-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:30px;margin:60px 0;}
+.deploy-card{background:#111;border:1px solid #222;border-radius:16px;padding:40px;position:relative;overflow:hidden;}
+.deploy-card.featured{border-color:#22c55e40;background:linear-gradient(135deg,#111 0%,#0a1a0a 100%);}
+.deploy-card.featured::before{content:"RECOMMENDED";position:absolute;top:20px;right:-35px;background:#22c55e;color:#000;padding:5px 40px;font-size:0.7rem;font-weight:bold;transform:rotate(45deg);}
+.deploy-card h3{font-size:1.5rem;margin:0 0 10px;color:#fff;display:flex;align-items:center;gap:10px;}
+.deploy-card .price{font-size:2.5rem;font-weight:bold;color:#22c55e;margin:20px 0 5px;}
+.deploy-card .price span{font-size:1rem;color:#666;font-weight:normal;}
+.deploy-card .price-note{color:#666;font-size:0.9rem;margin-bottom:20px;}
+.deploy-card ul{list-style:none;padding:0;margin:25px 0;}
+.deploy-card li{padding:10px 0;color:#888;display:flex;align-items:center;gap:10px;}
+.deploy-card li::before{content:"✓";color:#22c55e;font-weight:bold;}
+.deploy-card .cta{width:100%;text-align:center;margin-top:20px;}
+
+/* Features */
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:25px;margin:50px 0;}
+.feature{background:#111;border:1px solid #222;border-radius:12px;padding:30px;transition:border-color 0.2s;}
+.feature:hover{border-color:#333;}
+.feature-icon{font-size:2rem;margin-bottom:15px;}
+.feature h3{color:#fff;margin:0 0 10px;font-size:1.1rem;}
+.feature p{color:#888;margin:0;font-size:0.95rem;}
+
+/* Comparison */
+.comparison{background:#111;border-radius:16px;padding:50px;margin:60px 0;border:1px solid #222;}
+.comparison h2{text-align:center;margin:0 0 40px;color:#fff;}
 table{width:100%;border-collapse:collapse;}
-th,td{padding:15px;text-align:left;border-bottom:1px solid #333;}
-th{color:#888;font-weight:normal;}
-.check{color:#22c55e;}
-.x{color:#666;}
-code{background:#1a1a1a;padding:3px 8px;border-radius:4px;font-family:'Fira Code',monospace;font-size:0.9em;}
-pre{background:#1a1a1a;padding:20px;border-radius:8px;overflow-x:auto;border:1px solid #333;}
-.steps{counter-reset:step;}
-.step{display:flex;align-items:flex-start;margin:25px 0;padding-left:50px;position:relative;}
-.step::before{counter-increment:step;content:counter(step);position:absolute;left:0;width:36px;height:36px;background:#22c55e;color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;}
-.step-content h4{margin:0 0 5px;color:#fff;}
+th,td{padding:18px 15px;text-align:left;border-bottom:1px solid #222;}
+th{color:#666;font-weight:500;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.5px;}
+td:first-child{color:#fff;}
+.check{color:#22c55e;font-weight:bold;}
+.x{color:#444;}
+
+/* Steps */
+.steps{max-width:700px;margin:0 auto;counter-reset:step;}
+.step{display:flex;align-items:flex-start;margin:30px 0;padding-left:60px;position:relative;}
+.step::before{counter-increment:step;content:counter(step);position:absolute;left:0;width:42px;height:42px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.1rem;}
+.step-content h4{margin:0 0 8px;color:#fff;font-size:1.1rem;}
 .step-content p{margin:0;color:#888;}
-.nav{background:#111;padding:15px 0;border-bottom:1px solid #222;}
-.nav-inner{max-width:1000px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;}
-.nav a{color:#888;margin-left:20px;text-decoration:none;}
+
+/* Vibe section */
+.vibe-section{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:50px;margin:60px 0;text-align:center;border:1px solid #333;}
+.vibe-section h2{margin:0 0 15px;color:#fff;font-size:1.8rem;}
+.vibe-section p{color:#888;max-width:550px;margin:0 auto 25px;}
+
+/* Code */
+code{background:#1a1a1a;padding:3px 8px;border-radius:4px;font-family:'Fira Code',monospace;font-size:0.9em;color:#22c55e;}
+pre{background:#0d0d0d;padding:25px;border-radius:12px;overflow-x:auto;border:1px solid #222;font-size:0.9rem;}
+pre code{background:none;padding:0;color:#e5e5e5;}
+
+/* Nav */
+.nav{background:rgba(17,17,17,0.9);backdrop-filter:blur(10px);padding:15px 0;border-bottom:1px solid #222;position:fixed;top:0;left:0;right:0;z-index:100;}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;}
+.nav a{color:#888;margin-left:25px;text-decoration:none;font-size:0.95rem;transition:color 0.2s;}
 .nav a:hover{color:#22c55e;}
-.logo{font-weight:bold;font-size:1.2rem;color:#fff;}
-.vibe-section{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px;padding:40px;margin:40px 0;text-align:center;}
-.vibe-section h2{margin-top:0;}
-footer{text-align:center;padding:40px;color:#666;border-top:1px solid #222;}
+.logo{font-weight:bold;font-size:1.3rem;color:#fff;display:flex;align-items:center;gap:8px;}
+
+/* Self-host section */
+.selfhost-section{background:#111;border:1px solid #222;border-radius:16px;padding:50px;margin:60px 0;}
+.selfhost-section h2{margin:0 0 20px;color:#fff;}
+.selfhost-section p{color:#888;margin-bottom:25px;}
+.selfhost-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-top:30px;}
+.selfhost-item{background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:20px;text-align:center;}
+.selfhost-item h4{color:#fff;margin:10px 0 5px;font-size:1rem;}
+.selfhost-item p{color:#666;font-size:0.85rem;margin:0;}
+
+footer{text-align:center;padding:50px 20px;color:#666;border-top:1px solid #222;}
+footer a{color:#888;text-decoration:none;margin:0 15px;}
+footer a:hover{color:#22c55e;}
 </style>
 </head>
 <body>
@@ -829,96 +893,163 @@ footer{text-align:center;padding:40px;color:#666;border-top:1px solid #222;}
   <div class="nav-inner">
     <span class="logo">🪄 DomainProxy</span>
     <div>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
       <a href="/docs">API Docs</a>
-      <a href="/api/v1/integration-guide">Integration Guide</a>
-      <a href="/admin">Admin</a>
+      <a href="https://github.com/magnusfroste/domainproxy" target="_blank">GitHub</a>
+      <a href="/admin" style="color:#22c55e;">Get Started →</a>
     </div>
   </div>
 </nav>
 
-<div class="hero">
-  <div class="badge">✨ Free & Open Source</div>
-  <h1>Custom Domains for Your SaaS</h1>
-  <p class="subtitle">Give your customers branded subdomains with automatic HTTPS. Like Cloudflare for SaaS, but free.</p>
-  <a href="/admin" class="cta">Get Your API Key</a>
-  <a href="/docs" class="cta secondary">View Docs</a>
+<div class="hero" style="padding-top:140px;">
+  <div class="badge">🚀 Cloud or Self-Hosted — Your Choice</div>
+  <h1>Custom Domains for <span>Your SaaS</span></h1>
+  <p class="subtitle">Give your customers branded subdomains with automatic HTTPS. Like Cloudflare for SaaS, but free and open source.</p>
+  <a href="/admin" class="cta">Start Free on Cloud</a>
+  <a href="https://github.com/magnusfroste/domainproxy" class="cta secondary">Self-Host →</a>
 </div>
 
-<div class="container">
+<div class="container" id="pricing">
+  <h2 class="section-title">Choose Your Deployment</h2>
+  <p class="section-subtitle">Use our managed cloud for instant setup, or self-host for complete control. Same powerful features either way.</p>
+  
+  <div class="deploy-options">
+    <div class="deploy-card featured">
+      <h3>☁️ DomainProxy Cloud</h3>
+      <div class="price">Free <span>forever</span></div>
+      <div class="price-note">No credit card required</div>
+      <ul>
+        <li>Instant API key — start in 30 seconds</li>
+        <li>Unlimited subdomains</li>
+        <li>Automatic HTTPS via Let's Encrypt</li>
+        <li>99.9% uptime SLA</li>
+        <li>Managed infrastructure</li>
+        <li>AI integration guide included</li>
+      </ul>
+      <a href="/admin" class="cta">Get Your Free API Key</a>
+    </div>
+    
+    <div class="deploy-card">
+      <h3>🏠 Self-Hosted</h3>
+      <div class="price">$0 <span>open source</span></div>
+      <div class="price-note">MIT License — do whatever you want</div>
+      <ul>
+        <li>Full source code access</li>
+        <li>Run on your own infrastructure</li>
+        <li>Complete data ownership</li>
+        <li>Customize everything</li>
+        <li>Docker Compose ready</li>
+        <li>Community support</li>
+      </ul>
+      <a href="https://github.com/magnusfroste/domainproxy" class="cta secondary">View on GitHub</a>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="features">
+  <h2 class="section-title">Everything You Need</h2>
+  <p class="section-subtitle">Built specifically for multi-tenant SaaS applications</p>
+  
   <div class="features">
     <div class="feature">
-      <h3>🔒 Automatic HTTPS</h3>
+      <div class="feature-icon">🔒</div>
+      <h3>Automatic HTTPS</h3>
       <p>TLS certificates provisioned automatically via Let's Encrypt. Zero configuration needed.</p>
     </div>
     <div class="feature">
-      <h3>⚡ On-Demand TLS</h3>
+      <div class="feature-icon">⚡</div>
+      <h3>On-Demand TLS</h3>
       <p>Certificates issued on first request. No waiting, no manual provisioning.</p>
     </div>
     <div class="feature">
-      <h3>🎯 Simple API</h3>
+      <div class="feature-icon">🎯</div>
+      <h3>Simple REST API</h3>
       <p>One API call to register a subdomain. Perfect for automation and AI coding tools.</p>
     </div>
     <div class="feature">
-      <h3>🌐 Multi-Tenant Ready</h3>
+      <div class="feature-icon">🌐</div>
+      <h3>Multi-Tenant Ready</h3>
       <p>Built for SaaS. Each customer gets their own branded subdomain.</p>
     </div>
     <div class="feature">
-      <h3>🤖 AI-Friendly</h3>
+      <div class="feature-icon">🤖</div>
+      <h3>AI-Friendly</h3>
       <p>Integration guide designed for Lovable, Cursor, and other AI coding assistants.</p>
     </div>
     <div class="feature">
-      <h3>💰 Free Forever</h3>
-      <p>No per-hostname fees. No enterprise contracts. Just works.</p>
+      <div class="feature-icon">🔓</div>
+      <h3>Open Source</h3>
+      <p>MIT licensed. Inspect the code, contribute, or fork it for your own needs.</p>
     </div>
   </div>
+</div>
 
+<div class="container">
   <div class="comparison">
-    <h2>DomainProxy vs Cloudflare for SaaS</h2>
+    <h2>DomainProxy vs Alternatives</h2>
     <table>
       <tr>
         <th>Feature</th>
         <th>Cloudflare for SaaS</th>
-        <th>DomainProxy</th>
+        <th>Custom Nginx</th>
+        <th style="color:#22c55e;">DomainProxy</th>
       </tr>
       <tr>
         <td>Automatic TLS</td>
         <td class="check">✓</td>
+        <td class="x">Manual</td>
         <td class="check">✓</td>
       </tr>
       <tr>
         <td>On-Demand Certificates</td>
         <td class="check">✓</td>
+        <td class="x">✗</td>
         <td class="check">✓</td>
       </tr>
       <tr>
         <td>Simple API</td>
         <td class="check">✓</td>
+        <td class="x">✗</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Self-Hostable</td>
+        <td class="x">✗</td>
+        <td class="check">✓</td>
         <td class="check">✓</td>
       </tr>
       <tr>
         <td>Pricing</td>
-        <td>$2/hostname/month</td>
-        <td><strong style="color:#22c55e">Free</strong></td>
+        <td>$2/hostname/mo</td>
+        <td>Server costs</td>
+        <td style="color:#22c55e;font-weight:bold;">Free</td>
       </tr>
       <tr>
-        <td>Setup</td>
-        <td>Enterprise contract</td>
-        <td><strong style="color:#22c55e">Instant API key</strong></td>
+        <td>Setup Time</td>
+        <td>Days (contract)</td>
+        <td>Hours</td>
+        <td style="color:#22c55e;font-weight:bold;">30 seconds</td>
       </tr>
       <tr>
         <td>AI Integration Guide</td>
+        <td class="x">✗</td>
         <td class="x">✗</td>
         <td class="check">✓</td>
       </tr>
     </table>
   </div>
+</div>
 
-  <h2 style="text-align:center;margin-top:60px;">How It Works</h2>
+<div class="container">
+  <h2 class="section-title">How It Works</h2>
+  <p class="section-subtitle">Get custom domains working in 4 simple steps</p>
+  
   <div class="steps">
     <div class="step">
       <div class="step-content">
         <h4>Get your API key</h4>
-        <p>Sign up in the admin panel and get your API key instantly.</p>
+        <p>Sign up in the admin panel and get your API key instantly. No credit card, no waiting.</p>
       </div>
     </div>
     <div class="step">
@@ -940,16 +1071,56 @@ footer{text-align:center;padding:40px;color:#666;border-top:1px solid #222;}
       </div>
     </div>
   </div>
+</div>
 
+<div class="container">
   <div class="vibe-section">
     <h2>🤖 Built for Vibe Coders</h2>
-    <p style="color:#888;max-width:500px;margin:0 auto 20px;">Building with Lovable, Cursor, or another AI tool? Point your AI at our integration guide:</p>
-    <pre style="text-align:left;max-width:600px;margin:0 auto;"><code>Read this guide and implement custom domains:
+    <p>Building with Lovable, Cursor, or another AI tool? Just point your AI at our integration guide:</p>
+    <pre><code>Read this guide and implement custom domains for my SaaS:
 https://proxy.froste.eu/api/v1/integration-guide</code></pre>
-    <p style="margin-top:20px;"><a href="/api/v1/integration-guide" class="cta">View Integration Guide</a></p>
+    <p style="margin-top:25px;"><a href="/api/v1/integration-guide" class="cta">View Integration Guide</a></p>
   </div>
+</div>
 
-  <h2 style="text-align:center;margin-top:60px;">Quick Example</h2>
+<div class="container">
+  <div class="selfhost-section">
+    <h2>🏠 Self-Hosting Made Easy</h2>
+    <p>Want complete control? Deploy DomainProxy on your own infrastructure in minutes.</p>
+    <pre><code># Clone and run with Docker
+git clone https://github.com/magnusfroste/domainproxy.git
+cd domainproxy
+cp .env.example .env
+docker compose up -d
+
+# That's it! Access at http://localhost:3000</code></pre>
+    <div class="selfhost-grid">
+      <div class="selfhost-item">
+        <div style="font-size:1.5rem;">🐳</div>
+        <h4>Docker Ready</h4>
+        <p>One command deploy</p>
+      </div>
+      <div class="selfhost-item">
+        <div style="font-size:1.5rem;">📦</div>
+        <h4>Caddy Included</h4>
+        <p>Auto TLS built-in</p>
+      </div>
+      <div class="selfhost-item">
+        <div style="font-size:1.5rem;">💾</div>
+        <h4>SQLite Storage</h4>
+        <p>No database setup</p>
+      </div>
+      <div class="selfhost-item">
+        <div style="font-size:1.5rem;">🔧</div>
+        <h4>Fully Customizable</h4>
+        <p>MIT licensed</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <h2 class="section-title">Quick Example</h2>
   <pre><code># 1. Create a tenant for your customer's domain
 curl -X POST https://proxy.froste.eu/api/v1/create-tenant \\
   -H "X-API-Key: your_api_key" \\
@@ -963,17 +1134,23 @@ curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \\
   -d '{
     "subdomain": "career",
     "base_domain": "lazyjobs.ink",
-    "target_url": "https://your-app.com"
+    "target_url": "https://your-app.lovable.app"
   }'
 
 # 3. Customer adds DNS: career.lazyjobs.ink CNAME proxy.froste.eu
 # 4. Visit https://career.lazyjobs.ink — HTTPS just works! 🎉</code></pre>
-
 </div>
 
 <footer>
-  <p>DomainProxy — Custom domains for SaaS builders</p>
-  <p><a href="/docs">API Docs</a> · <a href="/admin">Admin Panel</a> · <a href="/api/v1/integration-guide">Integration Guide</a></p>
+  <p style="font-size:1.1rem;color:#fff;margin-bottom:20px;">Ready to give your customers custom domains?</p>
+  <a href="/admin" class="cta" style="margin-bottom:30px;">Start Free on Cloud</a>
+  <p style="margin-top:30px;">
+    <a href="/docs">API Docs</a>
+    <a href="/admin">Admin Panel</a>
+    <a href="/api/v1/integration-guide">Integration Guide</a>
+    <a href="https://github.com/magnusfroste/domainproxy">GitHub</a>
+  </p>
+  <p style="margin-top:20px;font-size:0.9rem;">DomainProxy — Open source custom domains for SaaS builders</p>
 </footer>
 </body>
 </html>

@@ -1,228 +1,168 @@
-# DomainProxy: SaaS Subdomain Proxy Service & Demo SaaS App
+# 🪄 DomainProxy
 
-## Product Overview
+**Custom domains for your SaaS — Cloud or Self-Hosted**
 
-**DomainProxy** is a multi-tenant subdomain proxy service designed for SaaS builders. It enables your customers to seamlessly serve their branded subdomains (e.g., `career.companyname.com`) without complex DNS or infrastructure setup.
+Give your customers branded subdomains with automatic HTTPS. Like Cloudflare for SaaS, but free and open source.
 
-### Core Problem
-SaaS platforms need to let customers create custom subdomains for their branded experiences. Traditionally, this requires:
-- Customers to configure wildcard DNS (* CNAME)
-- SaaS providers to manage SSL certificates and reverse proxying
-- Complex integration for each customer domain
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](docker-compose.yml)
 
-**DomainProxy solves this** by providing a simple API that customers use to register subdomains, pointing their DNS once to your proxy service.
+## 🚀 Choose Your Deployment
 
-### How It Works
-1. **Customer Setup:** Point CNAME `career` (or any subdomain prefix) to your DomainProxy instance.
-2. **SaaS Integration:** Your app calls DomainProxy API to register `subdomain.companyname.com` → your backend URL.
-3. **Instant Activation:** Visitors access `https://career.companyname.com` which proxies to your SaaS tenant's page.
+| Option | Best For | Get Started |
+|--------|----------|-------------|
+| ☁️ **Cloud** | Quick start, no infrastructure | [proxy.froste.eu](https://proxy.froste.eu) |
+| 🏠 **Self-Hosted** | Full control, own data | See below |
 
-### Example Use Case: Career ATS SaaS
-- SaaS: Demo SaaS app (included sample)
-- Customer: "Acme Corp" wants `career.acmecorp.com`
-- DNS: `CNAME career acmecorp.com` → DomainProxy IP
-- SaaS: Register via API: `subdomain: "career", target_url: "https://your-saas.com/tenant/acme"`
-- Result: `https://career.acmecorp.com` serves Acme's branded career page with SSL.
+## ☁️ Cloud (Recommended)
 
-## Architecture
+Get started in 30 seconds — no infrastructure needed:
 
-- **Proxy Service:** Express.js server with SQLite database
-- **Auto SSL:** Integrates with Caddy for automatic Let's Encrypt certificates
-- **Multi-tenant:** Isolated by API keys per customer domain
-- **Demo SaaS:** Full-stack example that auto-registers customer subdomains
+1. Go to [proxy.froste.eu/admin](https://proxy.froste.eu/admin)
+2. Create a SaaS account to get your API key
+3. Start registering subdomains via API
 
-### How the Proxy & SaaS Deliver Custom Domains
+**That's it!** No servers, no certificates, no maintenance.
 
-1. **DNS points to the proxy:** Every customer CNAME (e.g., `career.companyname.com`) resolves to your DomainProxy host (`proxy.yourdomain.com`). Visitors always hit the proxy first.
-2. **SaaS registers the mapping:** The SaaS app calls `POST /api/v1/register-subdomain` with `subdomain`, `base_domain`, and its own public URL (`target_url`). DomainProxy stores that mapping and programs Caddy via the admin API.
-3. **Caddy issues TLS + forwards traffic:** When a visitor requests `https://career.companyname.com`, Caddy terminates HTTPS using the automatically issued certificate, keeps the original `Host` header, and forwards the request to the configured upstream.
-4. **SaaS detects the tenant:** The SaaS app inspects `Host` (still `career.companyname.com`), looks up the tenant by `base_domain`, and renders the correct content—even though it physically lives on `saas.yourdomain.com`.
+## 🏠 Self-Hosted
 
-Result: customers only configure DNS once, every custom domain gets valid HTTPS automatically, and your SaaS serves tenant-specific pages without managing certificates per customer.
+Want complete control? Deploy on your own infrastructure:
+
+```bash
+# Clone and run
+git clone https://github.com/magnusfroste/domainproxy.git
+cd domainproxy
+cp .env.example .env
+docker compose up -d
+
+# Access at http://localhost:3000
+```
+
+### Requirements
+- Docker & Docker Compose
+- A domain with wildcard DNS (`*.yourdomain.com → your-server-ip`)
+- Port 80 and 443 open
+
+## How It Works
+
+1. **You register a subdomain** via API: `career.customer.com → your-app.com`
+2. **Customer sets DNS**: `career.customer.com CNAME proxy.froste.eu`
+3. **Automatic HTTPS**: Certificate issued on first visit via Let's Encrypt
+4. **Proxy forwards traffic**: Requests go to your app with original host header
+
+```
+Customer visits: https://career.customer.com
+        ↓
+   DomainProxy (TLS termination)
+        ↓
+   Your SaaS app (receives X-Forwarded-Host: career.customer.com)
+```
 
 ## API Quick Start
 
 ```bash
 # 1. Create tenant (customer domain)
-curl -X POST https://yourproxy.com/api/v1/create-tenant \
-  -H "X-API-Key: your_saas_api_key" \
+curl -X POST https://proxy.froste.eu/api/v1/create-tenant \
+  -H "X-API-Key: your_api_key" \
+  -H "Content-Type: application/json" \
   -d '{"base_domain": "customer.com"}'
 
 # 2. Register subdomain proxy
-curl -X POST https://yourproxy.com/api/v1/register-subdomain \
-  -H "X-API-Key: your_saas_api_key" \
-  -d '{"subdomain": "career", "base_domain": "customer.com", "target_url": "https://your-saas.com/tenant/customer"}'
+curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \
+  -H "X-API-Key: your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"subdomain": "career", "base_domain": "customer.com", "target_url": "https://your-app.com"}'
 
-# Visit: https://career.customer.com
+# 3. Customer adds DNS: career.customer.com CNAME proxy.froste.eu
+# 4. Visit https://career.customer.com — HTTPS just works! 🎉
 ```
 
-## Demo
+> **Self-hosted?** Replace `proxy.froste.eu` with your own domain.
 
-- **Admin:** https://yourproxy.com/admin (admin/admin123)
-- **Demo SaaS API Key:** saas_demo_123
-- **Demo Tenant:** froste.eu
-- **Test Command:**
-  ```bash
-  curl -X POST http://localhost:3000/api/v1/register-subdomain \
-    -H "X-API-Key: saas_demo_123" \
-    -d '{"subdomain": "career", "base_domain": "froste.eu", "target_url": "https://httpbin.org"}'
-  ```
-- **Visit:** https://career.froste.eu
+## API Reference
 
-### Demo SaaS Integration Example
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/create-tenant` | POST | Create a tenant (base domain) |
+| `/api/v1/register-subdomain` | POST | Register subdomain proxy |
+| `/api/v1/delete-proxy` | POST | Delete subdomain proxy |
+| `/api/v1/tenants` | GET | List your tenants |
+| `/api/v1/proxies` | GET | List your proxies |
+| `/api/v1/status` | GET | Health check |
+| `/api/v1/verify-domain` | GET | Check if domain is registered |
+| `/api/v1/integration-guide` | GET | Full integration guide (Markdown) |
 
-The bundled Demo SaaS illustrates how a typical platform plugs into DomainProxy:
+Full documentation: [proxy.froste.eu/docs](https://proxy.froste.eu/docs)
 
-1. **Customer Signs Up:** User logs into the SaaS admin (e.g., demo1@froste.eu/demo123).
-2. **Configure Domain:** In dashboard, enter `base_domain` (e.g., customer.com) and `subdomain` (e.g., career).
-3. **Auto-Register:** The SaaS calls DomainProxy API to create the tenant and register the subdomain.
-4. **DNS Setup:** Customer points CNAME `career` → your DomainProxy IP.
-5. **Live Page:** Visitors access `https://career.customer.com` for the branded experience.
+## 🤖 Built for Vibe Coders
 
-**Demo SaaS Config:** Set `SUBDOMAIN_API_KEY` to your SaaS API key (e.g., `saas_demo_123`).
+Building with Lovable, Cursor, or another AI tool? Just point your AI at our integration guide:
 
-**Test Locally:**
-- SaaS app: http://localhost:3001/login
-- Create tenant: base_domain=froste.eu, subdomain=career
-- Check proxy registered: GET /api/v1/proxies with X-API-Key: saas_demo_123
+```
+Read this guide and implement custom domains for my SaaS:
+https://proxy.froste.eu/api/v1/integration-guide
+```
+
+## Self-Hosted Production Deployment
+
+### 1. Get a VPS
+Any provider works: DigitalOcean, Hetzner, Linode, etc. ($5-10/month)
+
+### 2. Set up DNS
+Point your domain's wildcard to your server:
+```
+*.yourdomain.com  A  your-server-ip
+yourdomain.com    A  your-server-ip
+```
+
+### 3. Deploy
+```bash
+# SSH into your server
+ssh root@your-server-ip
+
+# Install Docker
+curl -fsSL https://get.docker.com | sh
+
+# Clone and configure
+git clone https://github.com/magnusfroste/domainproxy.git
+cd domainproxy
+cp .env.example .env
+
+# Edit .env with your settings
+nano .env
+
+# Start with production config
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### 4. Configure Caddy
+Edit `Caddyfile` with your domain and email for Let's Encrypt.
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3000` |
+| `ADMIN_USER` | Admin username | `admin` |
+| `ADMIN_PASS` | Admin password | `admin123` |
+| `CADDY_ADMIN_URL` | Caddy admin API | - |
+| `CADDY_EMAIL` | Email for Let's Encrypt | - |
+
+## Tech Stack
+
+- **Runtime:** Node.js + Express
+- **Database:** SQLite (zero config)
+- **TLS:** Caddy with on-demand certificates
+- **Container:** Docker + Docker Compose
+
+## Contributing
+
+PRs welcome! Please open an issue first to discuss major changes.
+
+## License
+
+MIT — do whatever you want.
 
 ---
 
-## 🐳 EasyPanel Deployment (Separate Instances)
-
-### 1. DomainProxy Instance (Proxy Server)
-**EasyPanel → New App → Docker Compose**
-Paste this [docker-compose.yml](docker-compose.yml) (Caddy HTTPS included):
-
-```
-version: '3.8'
-
-services:
-  domainproxy:
-    build: .
-    volumes:
-      - domainproxy_data:/app/data
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
-
-  caddy:
-    image: caddy:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-    depends_on:
-      - domainproxy
-    restart: unless-stopped
-
-volumes:
-  domainproxy_data:
-  caddy_data:
-```
-
-**Caddyfile:** 
-```
-:80 {
-  redir https://{host}{uri} permanent
-}
-
-# Replace with your domain
-*.yourdomain.com {
-  tls your-email@domain.com
-  reverse_proxy domainproxy:3000
-}
-
-# Admin/API
-yourdomain.com {
-  tls your-email@domain.com
-  reverse_proxy /admin* domainproxy:3000
-  reverse_proxy /api* domainproxy:3000
-  reverse_proxy /* domainproxy:3000
-}
-```
-
-**Domain:** yourdomain.com (wildcard DNS * → EasyPanel IP).
-
-**Access:** https://yourdomain.com/admin (admin/admin123)
-
-### 2. Demo SaaS Instance (Separate App)
-**EasyPanel → New App → Docker Compose**
-```
-version: '3.8'
-
-services:
-  demo-saas:
-    build: .
-    ports:
-      - "3001:3001"
-    volumes:
-      - saas_data:/app/data
-    environment:
-      - NODE_ENV=production
-      - SUBDOMAIN_URL=https://yourdomain.com  # Proxy instance URL
-    restart: unless-stopped
-
-volumes:
-  saas_data:
-```
-
-**Upload:** `saas/` folder as Git or zip.
-
-**Domain:** saas.yourdomain.com (or IP:3001).
-
-**Access:** https://saas.yourdomain.com:3001/login (demo1@froste.eu/demo123)
-
-### 3. Test Flow
-1. Proxy Admin: Create tenant "froste.eu" API key.
-2. CMS Login → Create tenant "froste.eu" (paste API key) → auto-registers "career".
-3. Namecheap: * → Proxy IP.
-4. https://career.froste.eu → Proxy → CMS → tenant data.
-
-**Local Test:** docker compose up --build -d (full stack).
-
-Production live!
-
-## 🚀 Fully Automated Self-Hosted Deployment (No EasyPanel)
-
-**Proxy Service (Subdomain)**
-
-1. VPS (e.g. DigitalOcean $6/mo Ubuntu 22.04), firewall ufw allow 22,80,443.
-
-2. `apt update && apt install docker docker-compose`
-
-3. `git clone https://github.com/magnusfroste/domainproxy.git && cd domainproxy`
-
-4. Edit `.env`:
-   ```
-   CADDY_EMAIL=your@email.com
-   ADMIN_USER=admin
-   ADMIN_PASS=strongpass
-   ```
-
-5. `docker compose up -d`
-
-6. **DNS:** Namecheap → yourdomain.com → Advanced DNS → Add A Record `*` → VPS IP
-
-7. Visit `https://yourdomain.com/admin` (basic auth) → **Create tenant `yourdomain.com`** → **Auto-magically:**
-   - Caddy adds `*.yourdomain.com` site block
-   - Requests Let's Encrypt wildcard cert (~1min)
-   - API key generated & shown
-
-**Test:** POST `/api/v1/register-subdomain` X-API-Key:your_key {subdomain:"test", target_url:"https://httpbin.org"} → https://test.yourdomain.com
-
----
-
-**Optional: Demo SaaS (separate VPS or same compose)**
-
-Deploy proxy first, note API base URL (yourdomain.com)
-
-SaaS docker-compose.yml: set SUBDOMAIN_URL=https://yourdomain.com
-
-`docker compose -f saas-docker-compose.yml up -d` (create separate)
-
-**Full local test:** `docker compose up` → https://career.lvh.me:443/admin → create froste.eu → https://career.froste.eu (after CMS tenant create)
-
-**Production ready!** Zero config beyond DNS + email.
+**Cloud:** [proxy.froste.eu](https://proxy.froste.eu) · **Docs:** [proxy.froste.eu/docs](https://proxy.froste.eu/docs) · **GitHub:** [magnusfroste/domainproxy](https://github.com/magnusfroste/domainproxy)
