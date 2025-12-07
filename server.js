@@ -584,14 +584,20 @@ li{margin:8px 0;}
 
 <h3>API Endpoints</h3>
 <ul>
-<li><code>POST /api/v1/create-tenant</code> — Create tenant (X-API-Key header)</li>
-<li><code>POST /api/v1/register-subdomain</code> — Register subdomain proxy</li>
-<li><code>POST /api/v1/delete-proxy</code> — Delete proxy entry</li>
-<li><code>GET /api/v1/tenants</code> — List tenants</li>
-<li><code>GET /api/v1/proxies</code> — List proxies</li>
-<li><code>GET /api/v1/status</code> — Health check</li>
-<li><code>GET /api/v1/integration-guide</code> — Full integration docs (markdown)</li>
+<li><code>POST /api/v1/create-tenant</code> — Create tenant for your base domain (X-API-Key header)</li>
+<li><code>POST /api/v1/register-subdomain</code> — Register subdomain proxy {subdomain, base_domain, target_url}</li>
+<li><code>POST /api/v1/delete-proxy</code> — Delete proxy entry {subdomain, base_domain}</li>
+<li><code>GET /api/v1/tenants</code> — List your tenants</li>
+<li><code>GET /api/v1/proxies</code> — List your proxies with provisioning status</li>
+<li><code>GET /api/v1/status</code> — Health check / service status</li>
+<li><code>GET /api/v1/verify-domain?domain=x</code> — Check if domain is registered (used by Caddy)</li>
+<li><code>GET /api/v1/integration-guide</code> — Full integration docs for AI tools (markdown)</li>
 </ul>
+
+<h3>How It Works</h3>
+<p>DomainProxy uses <strong>on-demand TLS</strong>: when a customer visits their subdomain for the first time, 
+Caddy automatically provisions an HTTPS certificate via Let's Encrypt. The <code>/api/v1/verify-domain</code> 
+endpoint validates that the domain is registered before issuing a cert.</p>
 
 <p><a href="/admin">🔐 Admin Panel</a> | Demo: <code>saas_demo_123</code></p>
 </body>
