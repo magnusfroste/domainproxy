@@ -94,6 +94,26 @@ curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \
 
 Full documentation: [proxy.froste.eu/docs](https://proxy.froste.eu/docs)
 
+## 🚀 SaaS Starter Template
+
+Want a working example? Check out the included SaaS starter in `/saas`:
+
+```bash
+cd saas
+cp .env.example .env
+# Add your API key
+npm install && npm start
+```
+
+Features:
+- User authentication
+- Multi-tenant dashboard
+- Automatic domain registration via API
+- Host-based tenant detection
+- Beautiful dark theme UI
+
+[View SaaS Starter README →](saas/README.md)
+
 ## 🤖 Built for Vibe Coders
 
 Building with Lovable, Cursor, or another AI tool? Just point your AI at our integration guide:
