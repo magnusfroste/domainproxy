@@ -530,11 +530,27 @@ app.use((req, res, next) => {
         return next(); // Fallback
       }
 
-      console.log(`🔄 Proxying ${host}${req.url} → ${row.target_url}`);
+      // Parse target URL to get base domain and path
+      const targetUrl = new URL(row.target_url);
+      const targetBase = `${targetUrl.protocol}//${targetUrl.host}`;
+      const targetPath = targetUrl.pathname;
+      
+      // For SPA apps: only rewrite root path, let assets go directly to target domain
+      const isAssetRequest = req.url.startsWith('/assets/') || 
+                             req.url.startsWith('/~') || 
+                             req.url.includes('.js') || 
+                             req.url.includes('.css') ||
+                             req.url.includes('.png') ||
+                             req.url.includes('.ico');
+      
+      const finalPath = isAssetRequest ? req.url : targetPath + req.url.slice(1);
+      console.log(`🔄 Proxying ${host}${req.url} → ${targetBase}${finalPath}`);
+      
       const proxy = createProxyMiddleware({
-        target: row.target_url,
+        target: targetBase,
         changeOrigin: true, // Use target's Host header for external services like Lovable
         secure: true, // for https targets
+        pathRewrite: () => finalPath,
         headers: {
           'X-Forwarded-Host': host, // Pass original host for multi-tenant detection
           'X-Original-Host': host
