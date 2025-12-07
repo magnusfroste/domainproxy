@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   proxy:
     build: .
@@ -22,6 +20,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    depends_on:
+      - proxy
 
 volumes:
   proxy_data:

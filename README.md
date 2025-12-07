@@ -11,12 +11,13 @@ Give your customers branded subdomains with automatic HTTPS. Like Cloudflare for
 
 | Option | Best For | Get Started |
 |--------|----------|-------------|
-| ☁️ **Cloud** | Quick start, no infrastructure | [proxy.froste.eu](https://proxy.froste.eu) |
-| 🏠 **Self-Hosted** | Full control, own data | See below |
+| ☁️ **Cloud Proxy** | Infrastructure as a service | [proxy.froste.eu](https://proxy.froste.eu) |
+| 🏠 **Self-Hosted Proxy** | Full control, own data | See below |
+| 🛠️ **SaaS Starter** | Build your own SaaS | [SaaS Demo](../saas-demo/) |
 
-## ☁️ Cloud (Recommended)
+## ☁️ Cloud Proxy (Recommended)
 
-Get started in 30 seconds — no infrastructure needed:
+Use our hosted proxy service — no infrastructure needed:
 
 1. Go to [proxy.froste.eu/admin](https://proxy.froste.eu/admin)
 2. Create a SaaS account to get your API key
