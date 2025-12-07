@@ -95,6 +95,7 @@ function provisionCaddyHost(subdomain, baseDomain, tenantId) {
   if (!CADDY_ADMIN_URL || !CADDY_EMAIL) return Promise.resolve();
   const hostname = `${subdomain}.${baseDomain}`;
   const serverName = `proxy-${hostname.replace(/\./g, '-')}`;
+  // Minimal server config; Caddy's global TLS automation (from Caddyfile) handles certs
   const caddyConfig = {
     listen: [":443", ":80"],
     routes: [{
@@ -103,18 +104,7 @@ function provisionCaddyHost(subdomain, baseDomain, tenantId) {
         handler: "reverse_proxy",
         upstreams: [{ dial: CADDY_UPSTREAM }]
       }]
-    }],
-    tls: {
-      automation: {
-        policies: [{
-          subjects: [hostname],
-          issuers: [{
-            module: "acme",
-            email: CADDY_EMAIL
-          }]
-        }]
-      }
-    }
+    }]
   };
 
   return axios.put(`${CADDY_ADMIN_URL}/config/apps/http/servers/${serverName}`, caddyConfig)
