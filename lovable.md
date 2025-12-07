@@ -1,10 +1,25 @@
-# Lovable Onboarding Spec: DomainProxy Integration
+# DomainProxy Integration Guide for Lovable
 
-## 1. Secrets collected at app creation
-1. `DOMAINPROXY_BASE_URL` – always `https://proxy.froste.eu` (can be hardcoded, but storing keeps everything in one place).
-2. `DOMAINPROXY_API_KEY` – SaaS API key generated in DomainProxy admin (keep secret).
+> **TL;DR:** DomainProxy gives your SaaS customers branded subdomains with automatic HTTPS. Like Cloudflare for SaaS, but free.
 
-> **Important:** The SaaS builder must still own a separate base domain for their tenants (e.g. `mysaas.com`). Store both values in Lovable Secrets so they are available to the backend. For any other config (like the SaaS builder’s own base domain) use regular environment variables or DB fields—**do not** send `proxy.froste.eu` as `base_domain`.
+## Quick Start
+
+1. Get an API key from [proxy.froste.eu/admin](https://proxy.froste.eu/admin)
+2. Add secrets to your Lovable project
+3. Implement host-based routing in your app
+4. Register subdomains via API when customers sign up
+
+## 1. Required Secrets
+
+Add these to your Lovable project secrets:
+
+| Secret | Value | Description |
+|--------|-------|-------------|
+| `DOMAINPROXY_BASE_URL` | `https://proxy.froste.eu` | API base URL |
+| `DOMAINPROXY_API_KEY` | `saas_xxxxx` | Your API key from admin panel |
+| `CUSTOMER_DOMAIN` | `yourdomain.com` | The domain your customers will use |
+
+> **Important:** You must own a domain for your customers' subdomains (e.g., `lazyjobs.ink`). Set up a wildcard CNAME: `*.lazyjobs.ink → proxy.froste.eu`
 
 ## 2. TypeScript helper module
 ```ts
@@ -96,41 +111,120 @@ Use `req.tenant` in your controllers to fetch tenant-specific content.
 3. Wait a few minutes; we’ll email you once HTTPS is active.
 ```
 
-## 6. Lovable-specific configuration
+## 6. Host-Based Routing (Required for Lovable)
 
-### Published URL vs Dev URL
-Lovable projects have two different URLs:
-- **Dev URL:** `https://PROJECT_ID.lovableproject.com` — only works in preview mode
-- **Prod URL:** `https://APP_NAME.lovable.app` — works after publishing
+When customers access your app via their custom domain (e.g., `career.lazyjobs.ink`), your app needs to detect this and render the correct tenant content.
 
-⚠️ **The proxy must always point to the prod URL** (`*.lovable.app`), not the dev URL.
+### Step 1: Add host detection in App.tsx
 
-### Vite base config for assets
-When your app is accessed via a custom domain (e.g. `career.lazyjobs.ink`), the browser will try to load assets from that domain. To ensure JS/CSS loads correctly, set the `base` in `vite.config.ts`:
+```tsx
+// src/App.tsx
+const isCustomDomain = () => {
+  const host = window.location.hostname;
+  return !host.includes('lovable.app') && 
+         !host.includes('lovableproject.com') && 
+         !host.includes('localhost');
+};
 
-```ts
-// vite.config.ts
-export default defineConfig({
-  base: 'https://YOUR_APP.lovable.app/',
-  // ... other config
-});
+const App = () => {
+  // If accessed via custom domain, render tenant page
+  if (isCustomDomain()) {
+    const subdomain = window.location.hostname.split('.')[0];
+    return <TenantPage subdomain={subdomain} />;
+  }
+  
+  // Normal routing for your main app
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/t/:subdomain" element={<TenantPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
 ```
 
-This ensures assets are always loaded from the published Lovable URL, regardless of which custom domain the user visits.
+### Step 2: Create TenantPage component
 
-### Re-publish after changes
-After updating `vite.config.ts` or changing the target URL in the proxy, you must **re-publish** the Lovable app for changes to take effect.
+```tsx
+// src/pages/TenantPage.tsx
+interface TenantPageProps {
+  subdomain?: string;
+}
 
-## 7. Troubleshooting & best practices
-- Never send wildcard subdomains (`*`). HTTP-01 ACME cannot provision `*.domain.com`.
-- Ensure DNS for `subdomain.baseDomain` points to `proxy.froste.eu` before testing HTTPS.
-- If you see a white/blank page via the proxy, check that `vite.config.ts` has the correct `base` URL.
-- If Caddy logs show `Caddy config failed`, re-run the registration with a valid subdomain and delete any bad entries.
-- Use the `/api/v1/verify-domain?domain=x` endpoint to check if a domain is registered.
+const TenantPage = ({ subdomain: propSubdomain }: TenantPageProps) => {
+  const { subdomain: paramSubdomain } = useParams();
+  const subdomain = propSubdomain || paramSubdomain;
+  
+  // Fetch tenant data from your database using subdomain
+  const { data: tenant } = useQuery({
+    queryKey: ['tenant', subdomain],
+    queryFn: () => fetchTenant(subdomain)
+  });
+  
+  return (
+    <div>
+      <h1>Welcome to {tenant?.company_name}</h1>
+      {/* Your tenant-specific content */}
+    </div>
+  );
+};
+```
 
-## 8. Validation checklist
-- [ ] Ensure `vite.config.ts` has `base` set to your published Lovable URL
-- [ ] Publish the Lovable app before testing custom domains
-- [ ] Run `connectCustomDomain` locally with `.lvh.me` to confirm the flow
-- [ ] Check DomainProxy logs for `✅ Domain registered: …` when registering
-- [ ] Visit the custom domain and verify tenant content renders with all assets loading
+### Step 3: Set target_url to your published app root
+
+When registering subdomains, set `target_url` to your **published Lovable app root** (not a specific path):
+
+```ts
+// In your edge function
+const targetUrl = `https://YOUR_APP.lovable.app`; // NOT /t/subdomain
+```
+
+The proxy will forward all requests to your app, and your app's host detection will handle routing.
+
+### Why this works
+1. Customer visits `https://career.lazyjobs.ink`
+2. Proxy forwards to `https://your-app.lovable.app`
+3. Your app detects `career.lazyjobs.ink` hostname
+4. App extracts `career` subdomain and renders tenant content
+
+## 7. Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| White/blank page | Check browser console for CORS errors. Ensure host-based routing is implemented. |
+| "Proxy Error" | Target URL is unreachable. Verify your Lovable app is published. |
+| Certificate not issued | DNS not pointing to `proxy.froste.eu`. Check with `dig subdomain.domain.com` |
+| Wrong page shows | Host detection not working. Check `isCustomDomain()` logic. |
+| Assets not loading | Ensure `vite.config.ts` has `base: "/"` (relative paths) |
+
+### Best Practices
+- Never use wildcard subdomains (`*`) — ACME HTTP-01 cannot provision wildcards
+- Always use the published Lovable URL (`*.lovable.app`), not dev URL
+- Set up wildcard DNS once: `*.yourdomain.com → proxy.froste.eu`
+- Test in incognito mode to avoid cache issues
+
+## 8. Validation Checklist
+
+- [ ] API key obtained from [proxy.froste.eu/admin](https://proxy.froste.eu/admin)
+- [ ] Secrets added to Lovable project
+- [ ] Host-based routing implemented in `App.tsx`
+- [ ] Wildcard DNS configured: `*.yourdomain.com → proxy.froste.eu`
+- [ ] Lovable app published
+- [ ] Subdomain registered via API
+- [ ] Custom domain loads with HTTPS and correct content
+
+## 9. API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/create-tenant` | POST | Create tenant (base domain) |
+| `/api/v1/register-subdomain` | POST | Register subdomain proxy |
+| `/api/v1/delete-proxy` | POST | Delete subdomain proxy |
+| `/api/v1/tenants` | GET | List your tenants |
+| `/api/v1/proxies` | GET | List your proxies |
+| `/api/v1/status` | GET | Health check |
+| `/api/v1/verify-domain` | GET | Check if domain is registered |
+
+Full API docs: [proxy.froste.eu/docs](https://proxy.froste.eu/docs)

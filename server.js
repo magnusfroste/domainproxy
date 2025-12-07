@@ -374,38 +374,43 @@ app.get('/admin', requireAdminAuth, (req, res) => {
     Promise.all(promises).then(saasData => {
       const saasHtml = saasData.map(s => {
         const tenantsHtml = s.tenants.map(t => 
-          `<li style="font-size:0.9em;padding:5px;margin:5px 0;background:#f9f9f9;">📍 ${t.base_domain} <span style="color:#666;font-size:0.8em;">(${new Date(t.created_at).toLocaleString()})</span></li>`
-        ).join('') || '<li style="font-size:0.9em;color:#999;">No tenants</li>';
+          `<div class="tenant-item">
+            <span>📍 ${t.base_domain}</span>
+            <span style="color:#666;font-size:0.85em;">${new Date(t.created_at).toLocaleDateString()}</span>
+          </div>`
+        ).join('') || '<p style="color:#666;font-size:0.9em;">No tenants yet</p>';
         
         const proxiesHtml = s.proxies.map(p => 
-          `<li style="font-size:0.9em;padding:5px;margin:5px 0;background:#f0f8ff;">
-            🔗 <strong>${p.subdomain}.${p.base_domain}</strong> → ${p.target_url}
-            <br><span style="color:#666;font-size:0.8em;margin-left:20px;">${new Date(p.created_at).toLocaleString()}</span>
-          </li>`
-        ).join('') || '<li style="font-size:0.9em;color:#999;">No proxies</li>';
+          `<div class="proxy-item">
+            <div class="proxy-url">🔗 ${p.subdomain}.${p.base_domain}</div>
+            <div class="proxy-target">→ ${p.target_url}</div>
+          </div>`
+        ).join('') || '<p style="color:#666;font-size:0.9em;">No proxies yet</p>';
         
         return `
-          <li style="margin-bottom:20px;">
-            <div style="background:#f8f9fa;padding:10px;border-radius:5px;margin-bottom:10px;position:relative;">
-              <strong style="font-size:1.1em;">${s.name || 'Unnamed SaaS'}</strong>
-              <br><code style="background:#fff;padding:3px 8px;border-radius:3px;font-size:0.9em;">${s.api_key}</code>
-              <br><span style="color:#666;font-size:0.85em;">Created: ${new Date(s.created_at).toLocaleString()}</span>
-              <form method="post" action="/admin/delete-saas" style="display:inline;position:absolute;top:10px;right:10px;">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <h3 style="margin:0 0 10px;">${s.name || 'Unnamed SaaS'}</h3>
+                <div class="api-key">${s.api_key}</div>
+                <p style="color:#666;font-size:0.85em;margin:10px 0 0;">Created: ${new Date(s.created_at).toLocaleDateString()}</p>
+              </div>
+              <form method="post" action="/admin/delete-saas" style="margin:0;">
                 <input type="hidden" name="saas_id" value="${s.saas_id}">
-                <button type="submit" onclick="return confirm('Delete ${s.name || 'this SaaS account'}? This will delete all tenants and proxies.')" style="padding:5px 10px;background:#dc3545;color:white;border:none;cursor:pointer;border-radius:3px;font-size:0.85em;">🗑️ Delete</button>
+                <button type="submit" onclick="return confirm('Delete ${s.name || 'this SaaS account'}? This will delete all tenants and proxies.')" class="btn btn-danger" style="padding:8px 12px;font-size:0.85em;">Delete</button>
               </form>
             </div>
             
-            <details style="margin-left:10px;">
-              <summary style="cursor:pointer;padding:5px;background:#e9ecef;border-radius:3px;margin:5px 0;">📂 Tenants (${s.tenant_count || 0})</summary>
-              <ul style="margin:10px 0;padding-left:20px;">${tenantsHtml}</ul>
+            <details style="margin-top:20px;">
+              <summary>📂 Tenants (${s.tenant_count || 0})</summary>
+              <div class="tenant-list">${tenantsHtml}</div>
             </details>
             
-            <details style="margin-left:10px;">
-              <summary style="cursor:pointer;padding:5px;background:#e9ecef;border-radius:3px;margin:5px 0;">🔗 Proxies (${s.proxy_count || 0})</summary>
-              <ul style="margin:10px 0;padding-left:20px;">${proxiesHtml}</ul>
+            <details>
+              <summary>🔗 Proxies (${s.proxy_count || 0})</summary>
+              <div class="proxy-list">${proxiesHtml}</div>
             </details>
-          </li>
+          </div>
         `;
       }).join('') || '<li>No SaaS accounts</li>';
 
@@ -415,50 +420,112 @@ app.get('/admin', requireAdminAuth, (req, res) => {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Subdomain Admin</title>
+<title>Admin - DomainProxy</title>
 <style>
-body{font-family:Arial;max-width:1200px;margin:50px auto;padding:20px;}
-form,ul{margin:20px 0;} 
-input,textarea{width:100%;padding:10px;box-sizing:border-box;}
-button{padding:10px 20px;background:#007bff;color:white;border:none;cursor:pointer;border-radius:5px;}
-button:hover{background:#0056b3;}
-li{padding:10px;border:1px solid #ddd;margin:10px 0;list-style:none;}
-details{margin:5px 0;}
-summary{font-weight:500;}
-code{font-family:monospace;}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#0a0a0a;color:#e5e5e5;line-height:1.6;}
+.container{max-width:1000px;margin:0 auto;padding:40px 20px;}
+h1{color:#fff;margin-bottom:5px;}
+h2{color:#fff;margin-top:40px;border-bottom:1px solid #333;padding-bottom:10px;}
+h3{color:#22c55e;}
+.subtitle{color:#888;margin-bottom:30px;}
+a{color:#22c55e;text-decoration:none;}
+a:hover{text-decoration:underline;}
+code{background:#1a1a1a;padding:2px 8px;border-radius:4px;font-family:'Fira Code',monospace;font-size:0.9em;color:#22c55e;}
+.nav{background:#111;padding:15px 0;border-bottom:1px solid #333;}
+.nav-inner{max-width:1000px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;}
+.nav a{color:#888;margin-left:20px;}
+.nav a:hover{color:#22c55e;}
+.logo{font-weight:bold;font-size:1.2rem;color:#fff;}
+.card{background:#111;border:1px solid #222;border-radius:12px;padding:25px;margin:15px 0;}
+.card h3{margin-top:0;}
+.api-key{background:#1a1a1a;padding:10px 15px;border-radius:6px;font-family:monospace;color:#22c55e;word-break:break-all;}
+.btn{display:inline-block;background:#22c55e;color:#000;padding:10px 20px;border-radius:6px;font-weight:600;border:none;cursor:pointer;text-decoration:none;}
+.btn:hover{background:#16a34a;text-decoration:none;}
+.btn-danger{background:#ef4444;color:#fff;}
+.btn-danger:hover{background:#dc2626;}
+.btn-secondary{background:#333;color:#fff;}
+.btn-secondary:hover{background:#444;}
+input{width:100%;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:1rem;margin-bottom:15px;}
+input:focus{outline:none;border-color:#22c55e;}
+.tenant-list,.proxy-list{margin:10px 0;}
+.tenant-item,.proxy-item{background:#1a1a1a;padding:12px 15px;border-radius:6px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;}
+.proxy-item{flex-direction:column;align-items:flex-start;}
+.proxy-url{color:#22c55e;font-weight:500;}
+.proxy-target{color:#888;font-size:0.9rem;}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;}
+.badge-success{background:#22c55e;color:#000;}
+.badge-pending{background:#f59e0b;color:#000;}
+.quick-start{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px;padding:25px;margin:20px 0;}
+.quick-start h3{color:#fff;margin-top:0;}
+pre{background:#0a0a0a;padding:15px;border-radius:6px;overflow-x:auto;font-size:0.85rem;}
+details{margin:10px 0;}
+summary{cursor:pointer;color:#888;}
+summary:hover{color:#22c55e;}
 </style>
 </head>
 <body>
-<h1>🪄 Subdomain - Domain Proxy Service</h1>
-<p><strong>Demo:</strong> froste.eu / SaaS API key: saas_demo_123</p>
-<p>Test: POST /api/v1/register-subdomain {subdomain:"career", base_domain:"froste.eu", target_url:"https://httpbin.org"}<br>
-Then visit https://career.froste.eu</p>
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="logo">🪄 DomainProxy</span>
+    <div>
+      <a href="/">Home</a>
+      <a href="/docs">API Docs</a>
+      <a href="/admin">Admin</a>
+    </div>
+  </div>
+</nav>
 
-<h3>API Docs</h3>
-<ul>
-<li><strong>POST /api/v1/create-tenant</strong> {base_domain} — Create tenant (X-API-Key header)</li>
-<li><strong>POST /api/v1/register-subdomain</strong> {subdomain, base_domain, target_url} — Register subdomain proxy</li>
-<li><strong>POST /api/v1/delete-proxy</strong> {subdomain, base_domain} — Delete proxy entry</li>
-<li><strong>GET /api/v1/tenants</strong> — List tenants for your SaaS</li>
-<li><strong>GET /api/v1/proxies</strong> — List proxies for your SaaS</li>
-<li><strong>GET /api/v1/status</strong> — Health check / service status</li>
-</ul>
-<p><strong>📖 Full Integration Guide:</strong> <a href="/api/v1/integration-guide" target="_blank">/api/v1/integration-guide</a> — TypeScript examples, DNS setup, troubleshooting</p>
+<div class="container">
+<h1>Admin Panel</h1>
+<p class="subtitle">Manage your SaaS accounts and API keys</p>
 
-<h3>SaaS Accounts</h3>
-<ul>${saasHtml}</ul>
+<div class="quick-start">
+  <h3>🚀 Quick Start</h3>
+  <p>1. Create a SaaS account below to get your API key</p>
+  <p>2. Use the API to register subdomains for your customers</p>
+  <p>3. Point your AI assistant at: <a href="/api/v1/integration-guide">/api/v1/integration-guide</a></p>
+</div>
 
-<h3>Create SaaS Account</h3>
-<form method="post" action="/admin/create-saas">
-  <input name="name" placeholder="SaaS Name (optional)">
-  <button type="submit">Create SaaS + API Key</button>
-</form>
-<script>
-// Ensure form submission includes auth
-document.querySelector('form').addEventListener('submit', function(e) {
-  console.log('Form submitted');
-});
-</script>
+<h2>Your SaaS Accounts</h2>
+${saasHtml || '<p style="color:#888;">No accounts yet. Create one below!</p>'}
+
+<h2>Create New SaaS Account</h2>
+<div class="card">
+  <form method="post" action="/admin/create-saas">
+    <input name="name" placeholder="SaaS Name (e.g., MyAwesomeApp)" autocomplete="off">
+    <button type="submit" class="btn">Create Account & Get API Key</button>
+  </form>
+</div>
+
+<h2>API Reference</h2>
+<div class="card">
+  <p><strong>Base URL:</strong> <code>https://proxy.froste.eu</code></p>
+  <p><strong>Authentication:</strong> <code>X-API-Key: your_api_key</code></p>
+  <details>
+    <summary>POST /api/v1/create-tenant</summary>
+    <pre>{"base_domain": "customerdomain.com"}</pre>
+  </details>
+  <details>
+    <summary>POST /api/v1/register-subdomain</summary>
+    <pre>{"subdomain": "app", "base_domain": "customerdomain.com", "target_url": "https://your-app.com"}</pre>
+  </details>
+  <details>
+    <summary>POST /api/v1/delete-proxy</summary>
+    <pre>{"subdomain": "app", "base_domain": "customerdomain.com"}</pre>
+  </details>
+  <details>
+    <summary>GET /api/v1/tenants</summary>
+    <p>List all tenants for your SaaS</p>
+  </details>
+  <details>
+    <summary>GET /api/v1/proxies</summary>
+    <p>List all proxies with status</p>
+  </details>
+  <p style="margin-top:20px;"><a href="/docs" class="btn btn-secondary">Full API Documentation →</a></p>
+</div>
+
+</div>
 </body></html>
       `);
     });
@@ -559,58 +626,355 @@ app.use((req, res, next) => {
 // Static files (after dynamic proxy, so proxied domains take precedence)
 app.use(express.static('public'));
 
+// Docs page
+app.get('/docs', (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Documentation - DomainProxy</title>
+<style>
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#0a0a0a;color:#e5e5e5;line-height:1.6;}
+.container{max-width:900px;margin:0 auto;padding:40px 20px;}
+h1{font-size:2.5rem;margin-bottom:10px;color:#fff;}
+h2{color:#fff;border-bottom:1px solid #333;padding-bottom:10px;margin-top:40px;}
+h3{color:#22c55e;margin-top:30px;}
+.subtitle{color:#888;font-size:1.1rem;margin-bottom:30px;}
+a{color:#22c55e;text-decoration:none;}
+a:hover{text-decoration:underline;}
+code{background:#1a1a1a;padding:2px 8px;border-radius:4px;font-family:'Fira Code',monospace;font-size:0.9em;color:#22c55e;}
+pre{background:#1a1a1a;padding:20px;border-radius:8px;overflow-x:auto;border:1px solid #333;}
+pre code{background:none;padding:0;color:#e5e5e5;}
+.endpoint{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:20px;margin:15px 0;}
+.method{display:inline-block;padding:4px 10px;border-radius:4px;font-weight:bold;font-size:0.85rem;margin-right:10px;}
+.method.post{background:#22c55e;color:#000;}
+.method.get{background:#3b82f6;color:#fff;}
+.method.delete{background:#ef4444;color:#fff;}
+.nav{background:#111;padding:15px 0;border-bottom:1px solid #333;}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;}
+.nav a{color:#888;margin-left:20px;}
+.nav a:hover{color:#22c55e;}
+.logo{font-weight:bold;font-size:1.2rem;color:#fff;}
+table{width:100%;border-collapse:collapse;margin:15px 0;}
+th,td{text-align:left;padding:10px;border-bottom:1px solid #333;}
+th{color:#888;font-weight:normal;}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="logo">🪄 DomainProxy</span>
+    <div>
+      <a href="/">Home</a>
+      <a href="/docs">Docs</a>
+      <a href="/admin">Admin</a>
+    </div>
+  </div>
+</nav>
+<div class="container">
+<h1>API Documentation</h1>
+<p class="subtitle">Complete reference for the DomainProxy API</p>
+
+<h2>Authentication</h2>
+<p>All API requests require an <code>X-API-Key</code> header with your SaaS API key.</p>
+<pre><code>curl -X POST https://proxy.froste.eu/api/v1/create-tenant \\
+  -H "X-API-Key: your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"base_domain": "yourdomain.com"}'</code></pre>
+
+<h2>Endpoints</h2>
+
+<div class="endpoint">
+  <h3><span class="method post">POST</span>/api/v1/create-tenant</h3>
+  <p>Create a tenant (base domain) for your SaaS. Call this once per customer domain.</p>
+  <table>
+    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>base_domain</code></td><td>string</td><td>Customer's base domain (e.g., "lazyjobs.ink")</td></tr>
+  </table>
+  <p><strong>Response:</strong></p>
+  <pre><code>{"success": true, "tenant_id": 1, "base_domain": "lazyjobs.ink"}</code></pre>
+</div>
+
+<div class="endpoint">
+  <h3><span class="method post">POST</span>/api/v1/register-subdomain</h3>
+  <p>Register a subdomain proxy. This is the main endpoint for adding customer subdomains.</p>
+  <table>
+    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>subdomain</code></td><td>string</td><td>Subdomain name (e.g., "career")</td></tr>
+    <tr><td><code>base_domain</code></td><td>string</td><td>Base domain (e.g., "lazyjobs.ink")</td></tr>
+    <tr><td><code>target_url</code></td><td>string</td><td>URL to proxy to (e.g., "https://myapp.com")</td></tr>
+  </table>
+  <p><strong>Response:</strong></p>
+  <pre><code>{
+  "success": true,
+  "subdomain": "career",
+  "base_domain": "lazyjobs.ink",
+  "target_url": "https://myapp.com",
+  "proxy_url": "https://career.lazyjobs.ink"
+}</code></pre>
+</div>
+
+<div class="endpoint">
+  <h3><span class="method post">POST</span>/api/v1/delete-proxy</h3>
+  <p>Delete a subdomain proxy entry.</p>
+  <table>
+    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>subdomain</code></td><td>string</td><td>Subdomain to delete</td></tr>
+    <tr><td><code>base_domain</code></td><td>string</td><td>Base domain</td></tr>
+  </table>
+</div>
+
+<div class="endpoint">
+  <h3><span class="method get">GET</span>/api/v1/tenants</h3>
+  <p>List all tenants (base domains) for your SaaS account.</p>
+</div>
+
+<div class="endpoint">
+  <h3><span class="method get">GET</span>/api/v1/proxies</h3>
+  <p>List all proxy entries with provisioning status.</p>
+</div>
+
+<div class="endpoint">
+  <h3><span class="method get">GET</span>/api/v1/status</h3>
+  <p>Health check endpoint. Returns service status.</p>
+</div>
+
+<div class="endpoint">
+  <h3><span class="method get">GET</span>/api/v1/verify-domain</h3>
+  <p>Check if a domain is registered. Used internally by Caddy for on-demand TLS.</p>
+  <table>
+    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>domain</code></td><td>query string</td><td>Full domain to check (e.g., "career.lazyjobs.ink")</td></tr>
+  </table>
+</div>
+
+<div class="endpoint">
+  <h3><span class="method get">GET</span>/api/v1/integration-guide</h3>
+  <p>Full integration guide in Markdown format. Perfect for AI coding assistants like Lovable.</p>
+</div>
+
+<h2>DNS Setup</h2>
+<p>Your customers need to add a CNAME record pointing their subdomain to <code>proxy.froste.eu</code>:</p>
+<pre><code>career.lazyjobs.ink  CNAME  proxy.froste.eu</code></pre>
+<p>Or use a wildcard for all subdomains:</p>
+<pre><code>*.lazyjobs.ink  CNAME  proxy.froste.eu</code></pre>
+
+<h2>How TLS Works</h2>
+<p>DomainProxy uses <strong>on-demand TLS</strong> with Let's Encrypt:</p>
+<ol>
+<li>Customer visits <code>https://career.lazyjobs.ink</code> for the first time</li>
+<li>Caddy calls <code>/api/v1/verify-domain</code> to check if domain is registered</li>
+<li>If registered, Caddy provisions a TLS certificate via ACME HTTP-01 challenge</li>
+<li>Certificate is cached and renewed automatically</li>
+</ol>
+
+</div>
+</body>
+</html>
+  `);
+});
+
 // Fallback landing page
 app.use((req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
-<head><title>DomainProxy - Custom Domain Proxy for SaaS</title>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DomainProxy - Custom Domains for SaaS</title>
 <style>
-body{font-family:sans-serif;max-width:700px;margin:60px auto;padding:20px;line-height:1.6;}
-h1{margin-bottom:10px;}
-.subtitle{color:#666;margin-bottom:30px;}
-.section{background:#f8f9fa;padding:15px 20px;border-radius:8px;margin:20px 0;}
-code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:0.9em;}
-a{color:#007bff;}
-ul{text-align:left;margin:10px 0;}
-li{margin:8px 0;}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#0a0a0a;color:#e5e5e5;line-height:1.6;}
+.hero{text-align:center;padding:80px 20px;background:linear-gradient(135deg,#0a0a0a 0%,#1a1a2e 100%);}
+.hero h1{font-size:3rem;margin-bottom:10px;color:#fff;}
+.hero .subtitle{font-size:1.3rem;color:#888;max-width:600px;margin:0 auto 30px;}
+.badge{display:inline-block;background:#22c55e;color:#000;padding:6px 14px;border-radius:20px;font-size:0.85rem;font-weight:600;margin-bottom:20px;}
+.cta{display:inline-block;background:#22c55e;color:#000;padding:14px 32px;border-radius:8px;font-weight:600;text-decoration:none;margin:10px;transition:transform 0.2s;}
+.cta:hover{transform:translateY(-2px);}
+.cta.secondary{background:#333;color:#fff;}
+.container{max-width:1000px;margin:0 auto;padding:60px 20px;}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:30px;margin:40px 0;}
+.feature{background:#111;border:1px solid #222;border-radius:12px;padding:30px;}
+.feature h3{color:#22c55e;margin-top:0;}
+.comparison{background:#111;border-radius:12px;padding:40px;margin:40px 0;}
+.comparison h2{text-align:center;margin-bottom:30px;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:15px;text-align:left;border-bottom:1px solid #333;}
+th{color:#888;font-weight:normal;}
+.check{color:#22c55e;}
+.x{color:#666;}
+code{background:#1a1a1a;padding:3px 8px;border-radius:4px;font-family:'Fira Code',monospace;font-size:0.9em;}
+pre{background:#1a1a1a;padding:20px;border-radius:8px;overflow-x:auto;border:1px solid #333;}
+.steps{counter-reset:step;}
+.step{display:flex;align-items:flex-start;margin:25px 0;padding-left:50px;position:relative;}
+.step::before{counter-increment:step;content:counter(step);position:absolute;left:0;width:36px;height:36px;background:#22c55e;color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;}
+.step-content h4{margin:0 0 5px;color:#fff;}
+.step-content p{margin:0;color:#888;}
+.nav{background:#111;padding:15px 0;border-bottom:1px solid #222;}
+.nav-inner{max-width:1000px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;}
+.nav a{color:#888;margin-left:20px;text-decoration:none;}
+.nav a:hover{color:#22c55e;}
+.logo{font-weight:bold;font-size:1.2rem;color:#fff;}
+.vibe-section{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px;padding:40px;margin:40px 0;text-align:center;}
+.vibe-section h2{margin-top:0;}
+footer{text-align:center;padding:40px;color:#666;border-top:1px solid #222;}
 </style>
 </head>
 <body>
-<h1>🪄 DomainProxy</h1>
-<p class="subtitle">Custom domain proxy for SaaS builders — HTTPS for every customer subdomain, zero config.</p>
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="logo">🪄 DomainProxy</span>
+    <div>
+      <a href="/docs">API Docs</a>
+      <a href="/api/v1/integration-guide">Integration Guide</a>
+      <a href="/admin">Admin</a>
+    </div>
+  </div>
+</nav>
 
-<div class="section">
-<strong>🚀 For Vibe Coders:</strong> Point Lovable (or any AI tool) at the integration guide:<br>
-<a href="/api/v1/integration-guide">/api/v1/integration-guide</a> — TypeScript examples, DNS setup, troubleshooting
+<div class="hero">
+  <div class="badge">✨ Free & Open Source</div>
+  <h1>Custom Domains for Your SaaS</h1>
+  <p class="subtitle">Give your customers branded subdomains with automatic HTTPS. Like Cloudflare for SaaS, but free.</p>
+  <a href="/admin" class="cta">Get Your API Key</a>
+  <a href="/docs" class="cta secondary">View Docs</a>
 </div>
 
-<h3>Quick Start</h3>
-<ul>
-<li><strong>1.</strong> Get an API key from <a href="/admin">Admin Panel</a></li>
-<li><strong>2.</strong> Call <code>POST /api/v1/register-subdomain</code> with your subdomain + target URL</li>
-<li><strong>3.</strong> Customer adds CNAME <code>subdomain.theirdomain.com → proxy.froste.eu</code></li>
-<li><strong>4.</strong> Done! HTTPS certificate issued automatically</li>
-</ul>
+<div class="container">
+  <div class="features">
+    <div class="feature">
+      <h3>🔒 Automatic HTTPS</h3>
+      <p>TLS certificates provisioned automatically via Let's Encrypt. Zero configuration needed.</p>
+    </div>
+    <div class="feature">
+      <h3>⚡ On-Demand TLS</h3>
+      <p>Certificates issued on first request. No waiting, no manual provisioning.</p>
+    </div>
+    <div class="feature">
+      <h3>🎯 Simple API</h3>
+      <p>One API call to register a subdomain. Perfect for automation and AI coding tools.</p>
+    </div>
+    <div class="feature">
+      <h3>🌐 Multi-Tenant Ready</h3>
+      <p>Built for SaaS. Each customer gets their own branded subdomain.</p>
+    </div>
+    <div class="feature">
+      <h3>🤖 AI-Friendly</h3>
+      <p>Integration guide designed for Lovable, Cursor, and other AI coding assistants.</p>
+    </div>
+    <div class="feature">
+      <h3>💰 Free Forever</h3>
+      <p>No per-hostname fees. No enterprise contracts. Just works.</p>
+    </div>
+  </div>
 
-<h3>API Endpoints</h3>
-<ul>
-<li><code>POST /api/v1/create-tenant</code> — Create tenant for your base domain (X-API-Key header)</li>
-<li><code>POST /api/v1/register-subdomain</code> — Register subdomain proxy {subdomain, base_domain, target_url}</li>
-<li><code>POST /api/v1/delete-proxy</code> — Delete proxy entry {subdomain, base_domain}</li>
-<li><code>GET /api/v1/tenants</code> — List your tenants</li>
-<li><code>GET /api/v1/proxies</code> — List your proxies with provisioning status</li>
-<li><code>GET /api/v1/status</code> — Health check / service status</li>
-<li><code>GET /api/v1/verify-domain?domain=x</code> — Check if domain is registered (used by Caddy)</li>
-<li><code>GET /api/v1/integration-guide</code> — Full integration docs for AI tools (markdown)</li>
-</ul>
+  <div class="comparison">
+    <h2>DomainProxy vs Cloudflare for SaaS</h2>
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Cloudflare for SaaS</th>
+        <th>DomainProxy</th>
+      </tr>
+      <tr>
+        <td>Automatic TLS</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>On-Demand Certificates</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Simple API</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Pricing</td>
+        <td>$2/hostname/month</td>
+        <td><strong style="color:#22c55e">Free</strong></td>
+      </tr>
+      <tr>
+        <td>Setup</td>
+        <td>Enterprise contract</td>
+        <td><strong style="color:#22c55e">Instant API key</strong></td>
+      </tr>
+      <tr>
+        <td>AI Integration Guide</td>
+        <td class="x">✗</td>
+        <td class="check">✓</td>
+      </tr>
+    </table>
+  </div>
 
-<h3>How It Works</h3>
-<p>DomainProxy uses <strong>on-demand TLS</strong>: when a customer visits their subdomain for the first time, 
-Caddy automatically provisions an HTTPS certificate via Let's Encrypt. The <code>/api/v1/verify-domain</code> 
-endpoint validates that the domain is registered before issuing a cert.</p>
+  <h2 style="text-align:center;margin-top:60px;">How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-content">
+        <h4>Get your API key</h4>
+        <p>Sign up in the admin panel and get your API key instantly.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <h4>Register subdomains via API</h4>
+        <p><code>POST /api/v1/register-subdomain</code> with subdomain, base_domain, and target_url.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <h4>Customer sets up DNS</h4>
+        <p>They add a CNAME record: <code>subdomain.theirdomain.com → proxy.froste.eu</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <h4>Done! HTTPS works automatically</h4>
+        <p>On first visit, we provision a Let's Encrypt certificate. No action needed.</p>
+      </div>
+    </div>
+  </div>
 
-<p><a href="/admin">🔐 Admin Panel</a> | Demo: <code>saas_demo_123</code></p>
+  <div class="vibe-section">
+    <h2>🤖 Built for Vibe Coders</h2>
+    <p style="color:#888;max-width:500px;margin:0 auto 20px;">Building with Lovable, Cursor, or another AI tool? Point your AI at our integration guide:</p>
+    <pre style="text-align:left;max-width:600px;margin:0 auto;"><code>Read this guide and implement custom domains:
+https://proxy.froste.eu/api/v1/integration-guide</code></pre>
+    <p style="margin-top:20px;"><a href="/api/v1/integration-guide" class="cta">View Integration Guide</a></p>
+  </div>
+
+  <h2 style="text-align:center;margin-top:60px;">Quick Example</h2>
+  <pre><code># 1. Create a tenant for your customer's domain
+curl -X POST https://proxy.froste.eu/api/v1/create-tenant \\
+  -H "X-API-Key: your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"base_domain": "lazyjobs.ink"}'
+
+# 2. Register a subdomain
+curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \\
+  -H "X-API-Key: your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "subdomain": "career",
+    "base_domain": "lazyjobs.ink",
+    "target_url": "https://your-app.com"
+  }'
+
+# 3. Customer adds DNS: career.lazyjobs.ink CNAME proxy.froste.eu
+# 4. Visit https://career.lazyjobs.ink — HTTPS just works! 🎉</code></pre>
+
+</div>
+
+<footer>
+  <p>DomainProxy — Custom domains for SaaS builders</p>
+  <p><a href="/docs">API Docs</a> · <a href="/admin">Admin Panel</a> · <a href="/api/v1/integration-guide">Integration Guide</a></p>
+</footer>
 </body>
 </html>
   `);
