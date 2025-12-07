@@ -292,6 +292,36 @@ app.post('/api/v1/delete-proxy', apiAuth, (req, res) => {
   );
 });
 
+// API: Service status / health check
+app.get('/api/v1/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'DomainProxy',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    caddy_admin: CADDY_ADMIN_URL || 'not configured'
+  });
+});
+
+// API: Integration guide (serves lovable.md content as JSON for AI tools)
+app.get('/api/v1/integration-guide', (req, res) => {
+  const guidePath = path.join(__dirname, 'lovable.md');
+  fs.readFile(guidePath, 'utf8', (err, content) => {
+    if (err) {
+      return res.status(404).json({ error: 'Integration guide not found' });
+    }
+    if (req.query.format === 'json') {
+      res.json({
+        title: 'DomainProxy Integration Guide',
+        format: 'markdown',
+        content
+      });
+    } else {
+      res.type('text/markdown').send(content);
+    }
+  });
+});
+
 // Admin Panel
 app.get('/admin', requireAdminAuth, (req, res) => {
   db.all(`
@@ -392,11 +422,14 @@ Then visit https://career.froste.eu</p>
 
 <h3>API Docs</h3>
 <ul>
-<li>POST /api/v1/create-tenant {base_domain} (X-API-Key header)</li>
-<li>POST /api/v1/register-subdomain {subdomain, base_domain, target_url}</li>
-<li>GET /api/v1/tenants</li>
-<li>GET /api/v1/proxies</li>
+<li><strong>POST /api/v1/create-tenant</strong> {base_domain} — Create tenant (X-API-Key header)</li>
+<li><strong>POST /api/v1/register-subdomain</strong> {subdomain, base_domain, target_url} — Register subdomain proxy</li>
+<li><strong>POST /api/v1/delete-proxy</strong> {subdomain, base_domain} — Delete proxy entry</li>
+<li><strong>GET /api/v1/tenants</strong> — List tenants for your SaaS</li>
+<li><strong>GET /api/v1/proxies</strong> — List proxies for your SaaS</li>
+<li><strong>GET /api/v1/status</strong> — Health check / service status</li>
 </ul>
+<p><strong>📖 Full Integration Guide:</strong> <a href="/api/v1/integration-guide" target="_blank">/api/v1/integration-guide</a> — TypeScript examples, DNS setup, troubleshooting</p>
 
 <h3>SaaS Accounts</h3>
 <ul>${saasHtml}</ul>
@@ -506,15 +539,47 @@ app.use((req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
-<head><title>Subdomain</title>
-<style>body{font-family:sans-serif;max-width:600px;margin:100px auto;padding:20px;text-align:center;}</style>
+<head><title>DomainProxy - Custom Domain Proxy for SaaS</title>
+<style>
+body{font-family:sans-serif;max-width:700px;margin:60px auto;padding:20px;line-height:1.6;}
+h1{margin-bottom:10px;}
+.subtitle{color:#666;margin-bottom:30px;}
+.section{background:#f8f9fa;padding:15px 20px;border-radius:8px;margin:20px 0;}
+code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:0.9em;}
+a{color:#007bff;}
+ul{text-align:left;margin:10px 0;}
+li{margin:8px 0;}
+</style>
 </head>
 <body>
-<h1>🪄 Subdomain - Custom Domain Proxy</h1>
-<p>Point wildcard DNS (*.yourdomain.com) to this server.</p>
-<p>Register subdomains via API: <code>POST /api/v1/register-subdomain</code></p>
-<p><a href="/admin">Admin Panel</a> | Example: <a href="https://career.froste.eu">career.froste.eu</a></p>
-<p>Demo SaaS: froste.eu / saas_demo_123</p>
+<h1>🪄 DomainProxy</h1>
+<p class="subtitle">Custom domain proxy for SaaS builders — HTTPS for every customer subdomain, zero config.</p>
+
+<div class="section">
+<strong>🚀 For Vibe Coders:</strong> Point Lovable (or any AI tool) at the integration guide:<br>
+<a href="/api/v1/integration-guide">/api/v1/integration-guide</a> — TypeScript examples, DNS setup, troubleshooting
+</div>
+
+<h3>Quick Start</h3>
+<ul>
+<li><strong>1.</strong> Get an API key from <a href="/admin">Admin Panel</a></li>
+<li><strong>2.</strong> Call <code>POST /api/v1/register-subdomain</code> with your subdomain + target URL</li>
+<li><strong>3.</strong> Customer adds CNAME <code>subdomain.theirdomain.com → proxy.froste.eu</code></li>
+<li><strong>4.</strong> Done! HTTPS certificate issued automatically</li>
+</ul>
+
+<h3>API Endpoints</h3>
+<ul>
+<li><code>POST /api/v1/create-tenant</code> — Create tenant (X-API-Key header)</li>
+<li><code>POST /api/v1/register-subdomain</code> — Register subdomain proxy</li>
+<li><code>POST /api/v1/delete-proxy</code> — Delete proxy entry</li>
+<li><code>GET /api/v1/tenants</code> — List tenants</li>
+<li><code>GET /api/v1/proxies</code> — List proxies</li>
+<li><code>GET /api/v1/status</code> — Health check</li>
+<li><code>GET /api/v1/integration-guide</code> — Full integration docs (markdown)</li>
+</ul>
+
+<p><a href="/admin">🔐 Admin Panel</a> | Demo: <code>saas_demo_123</code></p>
 </body>
 </html>
   `);
