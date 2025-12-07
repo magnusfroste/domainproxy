@@ -533,8 +533,12 @@ app.use((req, res, next) => {
       console.log(`🔄 Proxying ${host}${req.url} → ${row.target_url}`);
       const proxy = createProxyMiddleware({
         target: row.target_url,
-        changeOrigin: false, // Keep original Host header for multi-tenant detection
+        changeOrigin: true, // Use target's Host header for external services like Lovable
         secure: true, // for https targets
+        headers: {
+          'X-Forwarded-Host': host, // Pass original host for multi-tenant detection
+          'X-Original-Host': host
+        },
         onError: (err, req, res) => {
           console.error('Proxy error:', err);
           res.status(502).send('Proxy Error');
