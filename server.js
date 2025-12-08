@@ -617,12 +617,15 @@ app.use(async (req, res, next) => {
       console.log(`🔄 Proxying ${host}${req.url} → ${targetBase}${req.url}`);
       
       const isHttps = targetUrl.protocol === 'https:';
+      // For HTTPS targets (like Lovable), use changeOrigin to match their expected Host
+      // For HTTP targets (like self-hosted SaaS), preserve original host for tenant detection
+      const useChangeOrigin = isHttps;
       const proxy = createProxyMiddleware({
         target: targetBase,
-        changeOrigin: true, // Use target's Host header for external services like Lovable
-        secure: isHttps, // Only verify SSL for HTTPS targets
+        changeOrigin: useChangeOrigin,
+        secure: isHttps,
         headers: {
-          'X-Forwarded-Host': host, // Pass original host for multi-tenant detection
+          'X-Forwarded-Host': host, // Always pass original host for multi-tenant detection
           'X-Original-Host': host
         },
         onError: (err, req, res) => {
