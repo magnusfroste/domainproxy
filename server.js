@@ -81,7 +81,7 @@ db.serialize(() => {
   });
 
   // Demo SaaS account for testing
-  const demoApiKey = 'saas_demo_123';
+  const demoApiKey = 'saas_nfhcn9d17';
   db.get('SELECT id FROM saas_accounts WHERE api_key = ?', [demoApiKey], (err, row) => {
     if (!row) {
       db.run('INSERT INTO saas_accounts (api_key, name) VALUES (?, ?)', [demoApiKey, 'Demo SaaS'], function(err) {
