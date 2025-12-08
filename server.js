@@ -616,10 +616,11 @@ app.use(async (req, res, next) => {
       // The SPA will detect the custom domain and render the correct tenant page
       console.log(`🔄 Proxying ${host}${req.url} → ${targetBase}${req.url}`);
       
+      const isHttps = targetUrl.protocol === 'https:';
       const proxy = createProxyMiddleware({
         target: targetBase,
         changeOrigin: true, // Use target's Host header for external services like Lovable
-        secure: true, // for https targets
+        secure: isHttps, // Only verify SSL for HTTPS targets
         headers: {
           'X-Forwarded-Host': host, // Pass original host for multi-tenant detection
           'X-Original-Host': host
