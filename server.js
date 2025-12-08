@@ -575,11 +575,19 @@ app.get('/admin/logs', requireAdminAuth, (req, res) => {
 });
 
 // Dynamic Proxy Middleware (catch-all)
-app.use((req, res, next) => {
-  const host = (req.headers.host || '').toLowerCase();
-  const parts = host.split('.');
-  if (parts.length < 2) return next();
+app.use(async (req, res, next) => {
+  const host = req.headers.host || '';
+  const originalUrl = req.originalUrl;
+  
+  console.log(`🔍 Incoming request: ${req.method} ${host}${originalUrl}`);
+  
+  // Skip if not a custom domain (contains localhost, proxy domain, or no subdomain)
+  if (host.includes('localhost') || host.includes('proxy.froste.eu') || host.split('.').length < 3) {
+    console.log('⚠️ Skipping proxy for:', host);
+    return next();
+  }
 
+  const parts = host.split('.');
   const subdomain = parts[0];
   const baseDomain = parts.slice(1).join('.');
 
