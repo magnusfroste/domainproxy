@@ -63,18 +63,18 @@ Customer visits: https://career.customer.com
 
 ```bash
 # 1. Create tenant (customer domain)
-curl -X POST https://proxy.froste.eu/api/v1/create-tenant \
+curl -X POST https://subdomains.site/api/v1/create-tenant \
   -H "X-API-Key: your_api_key" \
   -H "Content-Type: application/json" \
   -d '{"base_domain": "customer.com"}'
 
 # 2. Register subdomain proxy
-curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \
+curl -X POST https://subdomains.site/api/v1/register-subdomain \
   -H "X-API-Key: your_api_key" \
   -H "Content-Type: application/json" \
   -d '{"subdomain": "career", "base_domain": "customer.com", "target_url": "https://your-app.com"}'
 
-# 3. Customer adds DNS: career.customer.com CNAME proxy.froste.eu
+# 3. Your customers need to add a CNAME record pointing their subdomain to <code>subdomains.site</code>:
 # 4. Visit https://career.customer.com — HTTPS just works! 🎉
 ```
 
@@ -93,7 +93,7 @@ curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \
 | `/api/v1/verify-domain` | GET | Check if domain is registered |
 | `/api/v1/integration-guide` | GET | Full integration guide (Markdown) |
 
-Full documentation: [proxy.froste.eu/docs](https://proxy.froste.eu/docs)
+Full documentation: [subdomains.site/docs](https://subdomains.site/docs)
 
 ## 🚀 SaaS Starter Template
 
@@ -186,4 +186,4 @@ MIT — do whatever you want.
 
 ---
 
-**Cloud:** [proxy.froste.eu](https://proxy.froste.eu) · **Docs:** [proxy.froste.eu/docs](https://proxy.froste.eu/docs) · **GitHub:** [magnusfroste/domainproxy](https://github.com/magnusfroste/domainproxy)
+**Cloud:** [proxy.froste.eu](https://proxy.froste.eu) · **Docs:** [subdomains.site/docs](https://subdomains.site/docs) · **GitHub:** [magnusfroste/domainproxy](https://github.com/magnusfroste/domainproxy)

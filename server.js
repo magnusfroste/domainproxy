@@ -582,7 +582,7 @@ app.use(async (req, res, next) => {
   console.log(`🔍 Incoming request: ${req.method} ${host}${originalUrl}`);
   
   // Skip if not a custom domain (contains localhost, proxy domain, or no subdomain)
-  if (host.includes('localhost') || host.includes('proxy.froste.eu') || host.split('.').length < 3) {
+  if (host.includes('localhost') || host.includes('subdomains.site') || host.split('.').length < 3) {
     console.log('⚠️ Skipping proxy for:', host);
     return next();
   }
@@ -708,10 +708,10 @@ th{color:#888;font-weight:normal;}
 <p>All API requests require an <code>X-API-Key</code> header with your SaaS API key.</p>
 <p><strong>Cloud users:</strong> Get your API key at <a href="/admin">/admin</a></p>
 <p><strong>Self-hosted:</strong> Create API keys in your own admin panel</p>
-<pre><code>curl -X POST https://proxy.froste.eu/api/v1/create-tenant \\
+<pre><code>curl -X POST https://subdomains.site/api/v1/create-tenant \\
   -H "X-API-Key: your_api_key" \\
   -H "Content-Type: application/json" \\
-  -d '{"base_domain": "yourdomain.com"}'</code></pre>
+  -d '{"base_domain": "lazyjobs.ink"}'</code></pre>
 
 <h2>Endpoints</h2>
 
@@ -785,10 +785,10 @@ th{color:#888;font-weight:normal;}
 </div>
 
 <h2>DNS Setup</h2>
-<p>Your customers need to add a CNAME record pointing their subdomain to <code>proxy.froste.eu</code>:</p>
-<pre><code>career.lazyjobs.ink  CNAME  proxy.froste.eu</code></pre>
+<p>Your customers need to add a CNAME record pointing their subdomain to <code>subdomains.site</code>:</p>
+<pre><code>career.lazyjobs.ink  CNAME  subdomains.site</code></pre>
 <p>Or use a wildcard for all subdomains:</p>
-<pre><code>*.lazyjobs.ink  CNAME  proxy.froste.eu</code></pre>
+<pre><code>*.lazyjobs.ink  CNAME  subdomains.site</code></pre>
 
 <h2>How TLS Works</h2>
 <p>DomainProxy uses <strong>on-demand TLS</strong> with Let's Encrypt:</p>
@@ -1134,13 +1134,13 @@ docker compose up -d
 <div class="container">
   <h2 class="section-title">Quick Example</h2>
   <pre><code># 1. Create a tenant for your customer's domain
-curl -X POST https://proxy.froste.eu/api/v1/create-tenant \\
+curl -X POST https://subdomains.site/api/v1/create-tenant \\
   -H "X-API-Key: your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{"base_domain": "lazyjobs.ink"}'
 
 # 2. Register a subdomain
-curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \\
+curl -X POST https://subdomains.site/api/v1/register-subdomain \\
   -H "X-API-Key: your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -1149,7 +1149,7 @@ curl -X POST https://proxy.froste.eu/api/v1/register-subdomain \\
     "target_url": "https://your-app.lovable.app"
   }'
 
-# 3. Customer adds DNS: career.lazyjobs.ink CNAME proxy.froste.eu
+# 3. Customer adds DNS: career.lazyjobs.ink CNAME subdomains.site
 # 4. Visit https://career.lazyjobs.ink — HTTPS just works! 🎉</code></pre>
 </div>
 

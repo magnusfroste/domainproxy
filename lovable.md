@@ -6,7 +6,7 @@
 
 | Option | Best For | URL |
 |--------|----------|-----|
-| ☁️ **Cloud** (recommended) | Quick start, no infrastructure | `https://proxy.froste.eu` |
+| ☁️ **Cloud** (recommended) | Quick start, no infrastructure | `https://subdomains.site` |
 | 🏠 **Self-Hosted** | Full control, own data | Your own domain |
 
 This guide uses Cloud examples. For self-hosted, replace `proxy.froste.eu` with your domain.
@@ -24,11 +24,11 @@ Add these to your Lovable project secrets:
 
 | Secret | Value | Description |
 |--------|-------|-------------|
-| `DOMAINPROXY_BASE_URL` | `https://proxy.froste.eu` | API base URL (or your self-hosted URL) |
+| `DOMAINPROXY_BASE_URL` | `https://subdomains.site` | API base URL (or your self-hosted URL) |
 | `DOMAINPROXY_API_KEY` | `saas_xxxxx` | Your API key from admin panel |
 | `CUSTOMER_DOMAIN` | `yourdomain.com` | The domain your customers will use |
 
-> **Important:** You must own a domain for your customers' subdomains (e.g., `lazyjobs.ink`). Set up a wildcard CNAME: `*.lazyjobs.ink → proxy.froste.eu` (or your self-hosted domain)
+> **Important:** You must own a domain for your customers' subdomains (e.g., `lazyjobs.ink`). Set up a wildcard CNAME: `*.lazyjobs.ink → subdomains.site` (or your self-hosted domain)
 
 ## 2. TypeScript helper module
 ```ts

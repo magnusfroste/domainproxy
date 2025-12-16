@@ -31,7 +31,7 @@ https://*.lvh.me {
 }
 
 # Prod edge: SaaS proxy on new VPS (HTTPS + HTTP)
-proxy.froste.eu {
+subdomains.site, www.subdomains.site {
   reverse_proxy proxy:3000 {
     header_up Host {host}
   }
